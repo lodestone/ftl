@@ -1,3 +1,3 @@
-require 'ftl'
-run Sinatra::Application
+require 'lib/ftl/server'
+run FTL::Server
 

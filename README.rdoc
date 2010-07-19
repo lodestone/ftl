@@ -1,4 +1,4 @@
-= ftl
+= FTL: Faster Than Light Pair Programing Server
 
 Description goes here.
 
@@ -14,4 +14,4 @@ Description goes here.
 
 == Copyright
 
-Copyright (c) 2010 Matt Petty. See LICENSE for details.
+Copyright (c) 2010 Matt Petty matt@kizmeta.com. See LICENSE for details.
