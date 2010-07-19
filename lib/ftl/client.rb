@@ -28,6 +28,22 @@ module FTL
     end
 
     def connect(args={})
+      response = self.class.get('/machines')
+      if response.length == 0
+        puts "No machines running. try: ftl start <servername>"
+      elsif response.length == 1
+        server = response.first
+      elsif response.length > 1 
+        if args.first.nil?
+          puts "Please provide the name (or partial name for the instance(s) you want to delete. For instance, like: ftl destroy ninja"
+        end
+        server = response.detect{|r| r['name'][args.first] }
+        if server.nil?
+          puts "Couldn't find that server name. try: ftl list"
+        end
+      end
+
+      `ssh dev@#{server['dns_name']}` if server
     end
 
     def destroy(args={})
