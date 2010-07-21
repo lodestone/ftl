@@ -37,7 +37,9 @@ module FTL
         if args.first.nil?
           puts "Please provide the name (or partial name for the instance(s) you want to delete. For instance, like: ftl destroy ninja"
         end
-        server = response.detect{|r| r['name'][args.first] }
+        puts "Looking for connection to #{args.first}..."
+        server = response.detect{|r| r['name'].first[args.first] }
+        puts "Connecting to #{args.first}..."
         if server.nil?
           puts "Couldn't find that server name. try: ftl list"
         end
@@ -58,7 +60,7 @@ module FTL
     def list(args={})
       response = self.class.get('/machines')
       column_widths = {'#' => 4}
-      if response.blank?
+      if response.empty?
         puts "No machines are running"
         return
       end
@@ -67,11 +69,18 @@ module FTL
       separator     = ' |'
             
                     
+      p keys
       keys.each {|r|
         widths = [r.length + separator.length]
         widths = widths + response.collect {|pm|
           # WOW right_aws sucks. Why is everything an array. BS
-          pm[r].first.length + separator.length
+          p pm[r]
+          p pm
+          if pm[r].nil?
+            0
+          else
+            pm[r].first.length + separator.length
+          end
         }
         column_widths[r] = widths.max 
       }
