@@ -42,19 +42,7 @@ module FTL
           puts "Couldn't find that server name. try: ftl list"
         end
       end
-      exec("ssh dev@#{server['dns_name']}")
-      # if server
-      #   begin
-      #     PTY.spawn("ssh dev@#{server['dns_name']}") do |stdin, stdout, pid|
-      #       begin
-      #         stdin.each { |line| print line }
-      #       rescue Errno::EIO
-      #       end
-      #     end
-      #   rescue PTY::ChildExited
-      #     puts "The child process exited!"
-      #   end
-      # end
+      exec("ssh dev@#{server['dns_name']}") if server['dns_name']
     end
 
     def destroy(args={})
@@ -76,7 +64,7 @@ module FTL
       end
       keys          = response.first.keys
       display_keys  = ['#'] + keys
-      separator     = ' | '
+      separator     = ' |'
             
                     
       keys.each {|r|
