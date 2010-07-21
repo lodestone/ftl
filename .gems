@@ -1,4 +1,4 @@
-sinatra
+sinatra --version 0.9.6
 right_aws
 httparty
 
