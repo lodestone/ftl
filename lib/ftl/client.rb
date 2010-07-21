@@ -69,13 +69,10 @@ module FTL
       separator     = ' |'
             
                     
-      p keys
       keys.each {|r|
         widths = [r.length + separator.length]
         widths = widths + response.collect {|pm|
           # WOW right_aws sucks. Why is everything an array. BS
-          p pm[r]
-          p pm
           if pm[r].nil?
             0
           else
