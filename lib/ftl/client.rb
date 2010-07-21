@@ -1,3 +1,4 @@
+require 'pty'
 require 'httparty'
 require 'json'
 
@@ -42,8 +43,19 @@ module FTL
           puts "Couldn't find that server name. try: ftl list"
         end
       end
-
-      `ssh dev@#{server['dns_name']}` if server
+      exec("ssh dev@#{server['dns_name']}")
+      # if server
+      #   begin
+      #     PTY.spawn("ssh dev@#{server['dns_name']}") do |stdin, stdout, pid|
+      #       begin
+      #         stdin.each { |line| print line }
+      #       rescue Errno::EIO
+      #       end
+      #     end
+      #   rescue PTY::ChildExited
+      #     puts "The child process exited!"
+      #   end
+      # end
     end
 
     def destroy(args={})

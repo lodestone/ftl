@@ -9,24 +9,31 @@ Gem::Specification.new do |s|
 
   s.required_rubygems_version = Gem::Requirement.new(">= 0") if s.respond_to? :required_rubygems_version=
   s.authors = ["Matt Petty"]
-  s.date = %q{2010-07-15}
+  s.date = %q{2010-07-20}
   s.default_executable = %q{ftl}
   s.description = %q{FTL spins up and down Amazon EC2 instances for pair programming}
   s.email = %q{matt@kizmeta.com}
   s.executables = ["ftl"]
   s.extra_rdoc_files = [
     "LICENSE",
-     "README.rdoc"
+     "README.rdoc",
+     "TODO"
   ]
   s.files = [
     ".document",
+     ".gems",
      ".gitignore",
      "LICENSE",
      "README.rdoc",
      "Rakefile",
+     "TODO",
      "VERSION",
+     "bin/ftl",
      "config.ru",
+     "ftl.gemspec",
      "lib/ftl.rb",
+     "lib/ftl/client.rb",
+     "lib/ftl/server.rb",
      "test/helper.rb",
      "test/test_ftl.rb"
   ]

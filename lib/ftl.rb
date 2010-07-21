@@ -1,1 +1,1 @@
-require 'lib/ftl/client'
+require 'ftl/client'

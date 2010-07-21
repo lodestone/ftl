@@ -1,9 +1,9 @@
 require 'sinatra'
 require 'right_aws'
-# require 'fog'
 require 'sdb/active_sdb'
 require 'json'
-# ENV["FOG_RC"] = 
+# require 'fog'
+# ENV["FOG_RC"] = Will need this if we switch to Fog
 
 class PairingMachine < Aws::ActiveSdb::Base
 end
@@ -12,8 +12,8 @@ module FTL
 
   class Server < Sinatra::Base
 
-    ACCESS_KEY_ID     = ENV['ACCESS_KEY_ID']
-    SECRET_ACCESS_KEY = ENV['SECRET_ACCESS_KEY']
+    ACCESS_KEY_ID     = ENV['ACCESS_KEY_ID']     || YAML.load_file(ENV['HOME']+'/.ftl/ftl.yml')['ACCESS_KEY_ID']
+    SECRET_ACCESS_KEY = ENV['SECRET_ACCESS_KEY'] || YAML.load_file(ENV['HOME']+'/.ftl/ftl.yml')['SECRET_ACCESS_KEY']
 
     before do
       Aws::ActiveSdb.establish_connection(ACCESS_KEY_ID, SECRET_ACCESS_KEY)
@@ -21,8 +21,7 @@ module FTL
 
     get '/machines' do
       # List the machines
-      p pms = PairingMachine.find(:all)
-
+      pms = PairingMachine.find(:all)
       ec2 = Aws::Ec2.new(ACCESS_KEY_ID, SECRET_ACCESS_KEY)
       pms.each do |pm|
         i = ec2.describe_instances(pm.attributes['aws_instance_id'])[0]
@@ -34,10 +33,12 @@ module FTL
 
     post '/machines' do
       # Create new machine
-      return "Need to name this machine" unless params[:name] 
+      return "Need to name this machine" unless params[:name]
+      return "Please provide an ami" unless params[:ami]
       pm = PairingMachine.new(params)
+      pm[:instance_type] ||= 'm1.small'
       ec2 = Aws::Ec2.new(ACCESS_KEY_ID, SECRET_ACCESS_KEY)
-      i = ec2.launch_instances(params[:ami])[0]
+      i = ec2.launch_instances(params[:ami], :user_data => "#!/", :instance_type => pm[:instance_type])[0]
       pm[:aws_instance_id] = i[:aws_instance_id]
       pm[:dns_name] = i[:dns_name]
       pm.save
@@ -45,19 +46,14 @@ module FTL
     end
 
     delete '/machines' do
-
-      p params
       # Destroy the machine by short name
       pms = PairingMachine.find(:all)
-      p pms
       pms = pms.select{|pm| pm.attributes['name'].first[params['name']] }
       return "{message: \"Provide the name of the machine(s) to be terminated\"}" if params['name'].nil? || pms.blank?
       ec2 = Aws::Ec2.new(ACCESS_KEY_ID, SECRET_ACCESS_KEY)
       instances = pms.collect{|pm| pm.attributes['aws_instance_id'].first }
-      p instances
-      p ec2.terminate_instances(instances)
+      ec2.terminate_instances(instances)
       pms.each {|pm|
-        puts "going to delete pm: #{pm.inspect}"
         pm.delete 
       }
       "{message: \"Shutdown machines matching '#{params['name']}'\"}"
