@@ -1,4 +1,5 @@
 require 'sinatra'
+require 'activesupport'
 require 'right_aws'
 require 'sdb/active_sdb'
 require 'json'
