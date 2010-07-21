@@ -1,5 +1,5 @@
 require 'sinatra'
-require 'activesupport'
+require 'active_support'
 require 'right_aws'
 require 'sdb/active_sdb'
 require 'json'
@@ -18,6 +18,7 @@ module FTL
 
     before do
       Aws::ActiveSdb.establish_connection(ACCESS_KEY_ID, SECRET_ACCESS_KEY)
+      PairingMachine.create_domain # Raises no error if it already exists, but blows up if it doesn't
     end
 
     get '/machines' do
