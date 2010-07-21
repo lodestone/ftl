@@ -1,4 +1,3 @@
-require 'pty'
 require 'httparty'
 require 'json'
 
