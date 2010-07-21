@@ -1,5 +1,5 @@
 sinatra
-active_support
+activesupport
 aws
 httparty
 
