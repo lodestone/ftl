@@ -38,7 +38,7 @@ module FTL
       return "Need to name this machine" unless params[:name]
       return "Please provide an ami" unless params[:ami]
       pm = PairingMachine.new(params)
-      pm[:instance_type] ||= 'c1.medium'
+      pm[:instance_type] ||= 'm1.small'
       ec2 = Aws::Ec2.new(ACCESS_KEY_ID, SECRET_ACCESS_KEY)
       i = ec2.launch_instances(params[:ami], :user_data => "#!/", :instance_type => pm[:instance_type])[0]
       pm[:aws_instance_id] = i[:aws_instance_id]
