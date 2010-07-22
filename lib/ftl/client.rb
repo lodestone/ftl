@@ -24,7 +24,7 @@ module FTL
         return
       end
       puts "Spinning up FTL..."
-      self.class.post('/machines', :body => '', :query => {:name => args.first, :ami => CONFIG['ami']})
+      self.class.post('/machines', :body => '', :query => {:name => args.first, :ami => CONFIG['ami']}, :instance_type => 'c1.medium')
     end
 
     def connect(args={})
