@@ -3,6 +3,8 @@ require 'active_support'
 require 'right_aws'
 require 'sdb/active_sdb'
 require 'json'
+require 'open-uri'
+
 # require 'fog'
 # ENV["FOG_RC"] = Will need this if we switch to Fog
 
@@ -15,6 +17,7 @@ module FTL
 
     ACCESS_KEY_ID     = ENV['ACCESS_KEY_ID']     || YAML.load_file(ENV['HOME']+'/.ftl/ftl.yml')['ACCESS_KEY_ID']
     SECRET_ACCESS_KEY = ENV['SECRET_ACCESS_KEY'] || YAML.load_file(ENV['HOME']+'/.ftl/ftl.yml')['SECRET_ACCESS_KEY']
+    INSTANCE_SCRIPT   = ENV['INSTANCE_SCRIPT']   || YAML.load_file(ENV['HOME']+'/.ftl/ftl.yml')['INSTANCE_SCRIPT']
 
     before do
       Aws::ActiveSdb.establish_connection(ACCESS_KEY_ID, SECRET_ACCESS_KEY)
@@ -40,7 +43,8 @@ module FTL
       pm = PairingMachine.new(params)
       pm[:instance_type] ||= 'c1.medium'
       ec2 = Aws::Ec2.new(ACCESS_KEY_ID, SECRET_ACCESS_KEY)
-      i = ec2.launch_instances(params[:ami], :user_data => "#!/", :instance_type => pm[:instance_type])[0]
+      instance_script = URI.parse(INSTANCE_SCRIPT).read || '#!'
+      i = ec2.launch_instances(params[:ami], :user_data => instance_script, :instance_type => pm[:instance_type])[0]
       pm[:aws_instance_id] = i[:aws_instance_id]
       pm[:dns_name] = i[:dns_name]
       pm.save
