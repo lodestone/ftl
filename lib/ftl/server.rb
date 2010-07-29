@@ -43,7 +43,11 @@ module FTL
       pm = PairingMachine.new(params)
       pm[:instance_type] ||= 'c1.medium'
       ec2 = Aws::Ec2.new(ACCESS_KEY_ID, SECRET_ACCESS_KEY)
-      instance_script = URI.parse(INSTANCE_SCRIPT).read || '#!'
+      if INSTANCE_SCRIPT.nil?
+        instance_script = '#!' 
+      else
+        instance_script = INSTANCE_SCRIPT[/^#!/] ? INSTANCE_SCRIPT || URI.parse(INSTANCE_SCRIPT).read
+      end
       i = ec2.launch_instances(params[:ami], :user_data => instance_script, :instance_type => pm[:instance_type])[0]
       pm[:aws_instance_id] = i[:aws_instance_id]
       pm[:dns_name] = i[:dns_name]
