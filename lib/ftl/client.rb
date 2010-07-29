@@ -24,10 +24,15 @@ module FTL
         return
       end
       puts "Spinning up FTL..."
-      self.class.post('/machines', :body => '', :query => {:name => args.first, :ami => CONFIG['ami']}, :instance_type => 'c1.medium')
+      self.class.post('/machines', :body => '', :query => {:name => args.first, :ami => CONFIG['ami']}, :instance_type => (CONFIG['type'] || 'c1.medium'))
     end
+    alias :up :start 
+    alias :spinup :start
+    alias :create :start
+    alias :new :start
 
     def connect(args={})
+      # Do some monkeying with .ssh/known_hosts to clear ones we've seen before
       response = self.class.get('/machines')
       if response.length == 0
         puts "No machines running. try: ftl start <servername>"
@@ -46,6 +51,7 @@ module FTL
       end
       exec("ssh dev@#{server['dns_name']}") if server['dns_name']
     end
+    alias :c :connect
 
     def destroy(args={})
       if args.first.nil?
@@ -56,6 +62,10 @@ module FTL
       response = self.class.delete('/machines', :query => {:name => args.first}, :body => {:name => args.first})
       puts response['message']
     end
+    alias :kill     :destroy 
+    alias :down     :destroy 
+    alias :shutdown :destroy 
+
 
     def list(args={})
       response = self.class.get('/machines')

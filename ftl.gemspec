@@ -9,7 +9,7 @@ Gem::Specification.new do |s|
 
   s.required_rubygems_version = Gem::Requirement.new(">= 0") if s.respond_to? :required_rubygems_version=
   s.authors = ["Matt Petty"]
-  s.date = %q{2010-07-22}
+  s.date = %q{2010-07-27}
   s.default_executable = %q{ftl}
   s.description = %q{FTL spins up and down Amazon EC2 instances for pair programming}
   s.email = %q{matt@kizmeta.com}
