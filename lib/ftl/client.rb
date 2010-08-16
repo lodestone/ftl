@@ -111,6 +111,21 @@ module FTL
       end
     end
 
+    def help(*args)
+      puts "Usage: ftl <command> <options>"
+      puts "  commands: start kill list connect"
+      puts "  examples:"
+      puts "    ftl start ninja   # starts an instance named 'ninja'"
+      puts "    ftl list          # shows running instances and status"
+      puts "    ftl connect       # connects to instance if only one is running"
+      puts "    ftl connect ninja # connects to instance named 'ninja'"
+      puts "    ftl kill nin      # kills all instances matching /nin/"
+    end
+
+    def method_missing(*args)
+      help
+    end
+
   end
 
 end
