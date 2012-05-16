@@ -20,11 +20,21 @@ Or install it yourself as:
 
 ### Example commands
 
-    ftl list               #
-    ftl start servername   #
-    ftl connect servername #
-    ftl stop servername    #
-    ftl status servername  #
+    Usage: ftl [<config-options>] <command> [<command-options>]
+      commands: start, kill, list, connect, servers, tags, images, snapshots, volumes
+      examples:
+        ftl start ninja                    # starts an instance named 'ninja'
+        ftl list                           # shows running instances and status
+        ftl connect ninja                  # connects to instance named 'ninja'
+        ftl kill nin                       # kills all instances matching /nin/
+        ftl images                         # shows aws images
+        ftl snapshots                      # shows aws snapshots
+        ftl tags                           # shows aws tags
+        ftl volumes                        # shows aws volumes
+        ftl --config=~/ftl.yml servers     # Uses custom config file 
+        ftl -c=~/ftl.yml servers           # Uses custom config file 
+        ftl --headers=id,tags.Name servers # Uses headers 
+        ftl servers headers                # Show possible headers
 
 ## Contributing
 
