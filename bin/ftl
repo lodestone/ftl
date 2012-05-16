@@ -1,40 +1,34 @@
 #!/usr/bin/env ruby
-
-require 'optparse'
-# require 'methadone'
 $LOAD_PATH << 'lib'
+require 'optparse'
 require 'ftl'
 
-# include Methadone::Main
-# main do |command, modifier| # Add args you want: |like,so|
-  # your program code here
-  # You can access CLI options via
-  # the options Hash
-  Ftl::Client.new(ARGV)
-# end
 
-# supplemental methods here
+options = {}
+optparse = OptionParser.new do |opts|
 
-# Declare command-line interface here
+  opts.on('-h', '--help', "Display this message") do
+    puts Ftl.help_message
+    exit
+  end
 
-# description "sanely manage your AWS"
-# description "one line description of your app"
-#
-# Accept flags via:
-# on("--flag VAL","Some flag")
-# options[flag] will contain VAL
-#
-# Specify switches via:
-# on("--[no-]switch","Some switch")
-#
-# Or, just call OptionParser methods on opts
-#
-# Require an argument
-# arg :some_arg 
-#
-# # Make an argument optional
-# arg :optional_arg, :optional
+  opts.on('-h', '--headers FILE', Array, "provide custom config file") do |headers|
+    options[:headers] = headers
+  end
 
-# version Ftl::VERSION
+  opts.on('-c', '--config FILE', "provide custom config file") do
+    puts "Supplied config file"
+    puts opts
+  end
 
-# go!
+end
+
+
+optparse.parse!
+
+p options
+p ARGV 
+
+
+Ftl::Client.new(ARGV, options)
+

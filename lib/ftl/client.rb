@@ -1,25 +1,93 @@
 module Ftl
 
+  def self.help_message
+    %Q{
+Usage: ftl [<config-options>] <command> [<command-options>]
+  commands: start, kill, list, connect, servers, tags, images, snapshots, volumes
+  examples:
+    ftl start ninja                    # starts an instance named 'ninja'
+    ftl list                           # shows running instances and status
+    ftl connect                        # connects to instance if only one is running
+    ftl connect ninja                  # connects to instance named 'ninja'
+    ftl kill nin                       # kills all instances matching /nin/
+    ftl images                         # shows aws images
+    ftl snapshots                      # shows aws snapshots
+    ftl tags                           # shows aws tags
+    ftl volumes                        # shows aws volumes
+    ftl --config=~/ftl.yml servers     # Uses custom config file 
+    ftl -c=~/ftl.yml servers           # Uses custom config file 
+    ftl --headers=id,tags.Name servers # Uses headers 
+    ftl servers headers                # Show possible headers
+    }
+  end
+
+  def self.help(*args)
+    puts help_message
+  end
+
   class Client
 
-    CONFIG            = YAML.load_file(ENV['HOME']+'/.ftl/ftl.yml')
-    ACCESS_KEY_ID     = CONFIG['ACCESS_KEY_ID']
-    SECRET_ACCESS_KEY = CONFIG['SECRET_ACCESS_KEY']
-    SPINUP_SCRIPT     = CONFIG['spinup_script']
-    INSTANCE_SCRIPT   = CONFIG['instance_script']
-    AMI               = CONFIG['ami']
-    INSTANCE_TYPE     = CONFIG['instance_type']
-    KEY_NAME          = CONFIG['key_name']
+    attr_reader :con
+    attr_accessor :options
 
-    attr_accessor :con
-
-    def initialize(args=nil)
-      @con = Fog::Compute.new(:provider => 'AWS', :aws_secret_access_key => SECRET_ACCESS_KEY, :aws_access_key_id => ACCESS_KEY_ID)
+    def initialize(args=nil, opts={})
+      load_config(opts)
+      @con = Fog::Compute.new(:provider => 'AWS', :aws_secret_access_key => options['SECRET_ACCESS_KEY'], :aws_access_key_id => options['ACCESS_KEY_ID'])
       if args
         arg = args.reverse.pop
         send(arg, args - [arg])
       end
     end
+
+   def ftl_yml
+%Q%
+ACCESS_KEY_ID: 
+SECRET_ACCESS_KEY: 
+:ami: ami-a29943cb
+:instance_type: c1.medium
+:default_username: ubuntu
+:instance_script:
+  #!/bin/sh
+  touch file.touched
+:spinup_script:
+  class Samurai;
+    def slice!;
+      puts "slice";
+    end;
+  end;
+  Samurai.new.slice!
+
+%
+   end
+
+   def load_config(opts={})
+     # TODO Make this less shitty. Such a common pattern.
+     default_config_name = 'ftl.yml'
+     default_config_dir  = '/.ftl/'
+     default_config_home = "#{ENV['HOME']}#{default_config_dir}"
+     default_config_file = "#{default_config_home}#{default_config_name}"
+     if Dir.exist?(default_config_home) 
+       if !File.exist?(default_config_file)     
+         File.open(default_config_file, 'w') {|f| f << ftl_yml }
+       end
+     else
+       Dir.mkdir(default_config_home)
+       File.open(default_config_file, 'w') {|f| f << ftl_yml }
+     end
+     @options = YAML.load_file(default_config_file)
+     @options = @options.merge(opts)
+     puts "======Please open #{default_config_file} and set ACCESS_KEY_ID and SECRET_ACCESS_KEY====\n\n" if aws_credentials_absent?
+   end
+
+   def aws_credentials_absent?
+     options['ACCESS_KEY_ID'].nil? || options['SECRET_ACCESS_KEY'].nil?
+   end
+
+
+
+
+
+
 
     def start(args={})
 
@@ -34,7 +102,7 @@ module Ftl
         return
       end
       puts "Spinning up FTL..."
-      i = @aws.launch_instances(AMI, :key_name => KEY_NAME, :tags => {"Name" => args.first}, :user_data => INSTANCE_SCRIPT, :instance_type => INSTANCE_TYPE)
+      i = @aws.launch_instances(options[:ami], :key_name => options[:key_name], :tags => {"Name" => args.first}, :user_data => options[:instance_script], :instance_type => options[:instance_type])
       i = con.servers.new()
       p i[:id]
       
@@ -78,26 +146,11 @@ module Ftl
     # ftl list /regex/ 
     def list(args={})
       # Formatador.display_table(servers, headers)
-      server_instances.table(headers)
+      server_instances.table(options[:headers]||headers)
     end
 
     def image(args={})
       Formatador.display_table(@con.images.find(:id => args.first))
-    end
-
-    def help(*args)
-      puts "Usage: ftl <command> <options>"
-      puts "  commands: start kill list connect"
-      puts "  examples:"
-      puts "    ftl start ninja   # starts an instance named 'ninja'"
-      puts "    ftl list          # shows running instances and status"
-      puts "    ftl connect       # connects to instance if only one is running"
-      puts "    ftl connect ninja # connects to instance named 'ninja'"
-      puts "    ftl kill nin      # kills all instances matching /nin/"
-      puts "    ftl images        # shows aws images"
-      puts "    ftl snapshots     # shows aws snapshots"
-      puts "    ftl tags          # shows aws tags"
-      puts "    ftl volumes       # shows aws volumes"
     end
 
     def method_missing(*args)
@@ -109,23 +162,21 @@ module Ftl
           when 'headers'
             print method
             p @con.send(method).first.attributes.keys
-          when /^headers=/
-            headerz = options.first.gsub("headers=",'').split(',')
-            p @con.send(method).table(headerz)
           else
             p @con.send(method).table(headers(method))
           end
         else
-          help
-          super(*args)
+          Ftl.help
+          # super(*args)
         end
       rescue 
-        help
-        super(*args)
+        Ftl.help
+        # super(*args)
       end
     end
 
     def headers(type=nil)
+      return options[:headers].map(&:to_sym) if options[:headers]
       case type
       when :snapshots
         [:id, :volume_id, :state, :volume_size, :description, :"tags.Name"]
@@ -163,9 +214,7 @@ module Ftl
     end
 
   private
-  
-  def default_user_script
-  end
+
 
 end
 
