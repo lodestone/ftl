@@ -95,7 +95,13 @@ module Ftl
         return
       end
       display "Spinning up FTL..."
-      i = con.servers.create(:key_name => options[:keypair], :groups => options[:groups], :image_id => options[:ami], :flavor_id => options[:instance_type], :username => options[:username])
+      i = con.servers.create(:user_data => options[:user_data],
+                             :key_name  => options[:keypair], 
+                             :groups    => options[:groups], 
+                             :image_id  => options[:ami], 
+                             :flavor_id => options[:instance_type], 
+                             :username  => options[:username]
+                             )
       tag = con.tags.new(:key => "Name", :value => args.first)
       tag.resource_id = i.id
       tag.resource_type = 'instance'
@@ -165,9 +171,10 @@ module Ftl
       end
     end
 
-    def headers(type=nil)
+    def headers(args={})
+      display "Showing header options for #{args.first}"
       return options[:headers].map(&:to_sym) if options[:headers]
-      case type
+      headerz = case args.first
       when :snapshots
         [:id, :volume_id, :state, :volume_size, :description, :"tags.Name"]
       when :volumes
@@ -175,6 +182,7 @@ module Ftl
       else
         [:id, :image_id, :flavor_id, :availability_zone, :state, :"tags.Name"]
       end
+      display con.send(args.first).first.attributes.keys
     end
 
     def extract_headers
