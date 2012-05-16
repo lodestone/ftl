@@ -1,55 +1,58 @@
-require 'httparty'
-require 'json'
-
-module FTL
+module Ftl
 
   class Client
 
-    include HTTParty
-
-    CONFIG = YAML.load_file(ENV['HOME']+'/.ftl/ftl.yml')
+    CONFIG            = YAML.load_file(ENV['HOME']+'/.ftl/ftl.yml')
     ACCESS_KEY_ID     = CONFIG['ACCESS_KEY_ID']
     SECRET_ACCESS_KEY = CONFIG['SECRET_ACCESS_KEY']
+    SPINUP_SCRIPT     = CONFIG['spinup_script']
+    INSTANCE_SCRIPT   = CONFIG['instance_script']
+    AMI               = CONFIG['ami']
+    INSTANCE_TYPE     = CONFIG['instance_type']
+    KEY_NAME          = CONFIG['key_name']
 
-    base_uri CONFIG['server']
-    format :json
+    attr_accessor :con
 
-    def initialize(args={})
-      send(args.reverse!.pop, args)
+    def initialize(args=nil)
+      @con = Fog::Compute.new(:provider => 'AWS', :aws_secret_access_key => SECRET_ACCESS_KEY, :aws_access_key_id => ACCESS_KEY_ID)
+      if args
+        arg = args.reverse.pop
+        send(arg, args - [arg])
+      end
     end
 
     def start(args={})
+
+      if INSTANCE_SCRIPT.nil?
+        # instance_script = '#!' 
+      else
+        # instance_script = INSTANCE_SCRIPT[/^#!/] ? INSTANCE_SCRIPT : URI.parse(INSTANCE_SCRIPT).read
+      end
+
       if args.first.nil?
         puts "Please provide a short name for instance, like: ftl start ninjaserver"
         return
       end
       puts "Spinning up FTL..."
-      self.class.post('/machines', :body => '', :query => {:name => args.first, :ami => CONFIG['ami']}, :instance_type => (CONFIG['type'] || 'c1.medium'))
+      i = @aws.launch_instances(AMI, :key_name => KEY_NAME, :tags => {"Name" => args.first}, :user_data => INSTANCE_SCRIPT, :instance_type => INSTANCE_TYPE)
+      i = con.servers.new()
+      p i[:id]
+      
+      # aws.create_tags(i.first[:], {"Name" => "my_awesome_server"})
     end
-    alias :up :start 
+    alias :up     :start 
     alias :spinup :start
     alias :create :start
-    alias :new :start
+    alias :new    :start
 
     def connect(args={})
       # Do some monkeying with .ssh/known_hosts to clear ones we've seen before
-      response = self.class.get('/machines')
-      if response.length == 0
-        puts "No machines running. try: ftl start <servername>"
-      elsif response.length == 1
-        server = response.first
-      elsif response.length > 1 
-        if args.first.nil?
-          puts "Please provide the name (or partial name for the instance(s) you want to delete. For instance, like: ftl destroy ninja"
-        end
-        puts "Looking for connection to #{args.first}..."
-        server = response.detect{|r| r['name'].first[args.first] }
-        puts "Connecting to #{args.first}..."
-        if server.nil?
-          puts "Couldn't find that server name. try: ftl list"
-        end
+      match = server_instances.find{|instance| instance[:tags]['Name'] == args.first || instance[:id] == args.first }
+      if match
+        exec("ssh #{CONFIG[:default_username]||'root'}@#{match[:dns_name]}")
+      else
+        puts "Typo alert! No server found!"
       end
-      exec("ssh dev@#{server['dns_name']}") if server['dns_name']
     end
     alias :c :connect
 
@@ -59,56 +62,27 @@ module FTL
         return
       end
       puts "Spinning down FTL..."
-      response = self.class.delete('/machines', :query => {:name => args.first}, :body => {:name => args.first})
-      puts response['message']
+      @aws.terminate_instances(args.first)
     end
     alias :kill     :destroy 
     alias :down     :destroy 
     alias :shutdown :destroy 
 
 
+    # ftl info <instance-id|tag.name>
+    def info(args={})
+      p @con.servers.get(args.first)
+    end
+
+    # ftl list
+    # ftl list /regex/ 
     def list(args={})
-      response = self.class.get('/machines')
-      column_widths = {'#' => 4}
-      if response.empty?
-        puts "No machines are running"
-        return
-      end
-      keys          = response.first.keys
-      display_keys  = ['#'] + keys
-      separator     = ' |'
-            
-                    
-      keys.each {|r|
-        widths = [r.length + separator.length]
-        widths = widths + response.collect {|pm|
-          # WOW right_aws sucks. Why is everything an array. BS
-          if pm[r].nil?
-            0
-          else
-            pm[r].first.length + separator.length
-          end
-        }
-        column_widths[r] = widths.max 
-      }
+      # Formatador.display_table(servers, headers)
+      server_instances.table(headers)
+    end
 
-      # Headers
-      display_keys.sort.each do |key|
-        print key.rjust(column_widths[key])
-        print separator 
-      end
-      print "\n"
-
-      # Machines
-      response.each_with_index do |r,idx|
-        r['#'] = "#{idx+1}"
-        display_keys.sort.each do |key|
-          value = r[key].nil? ? '-' : r[key].first
-          print value.rjust(column_widths[key])
-          print separator
-        end
-        print "\n"
-      end
+    def image(args={})
+      Formatador.display_table(@con.images.find(:id => args.first))
     end
 
     def help(*args)
@@ -120,26 +94,81 @@ module FTL
       puts "    ftl connect       # connects to instance if only one is running"
       puts "    ftl connect ninja # connects to instance named 'ninja'"
       puts "    ftl kill nin      # kills all instances matching /nin/"
+      puts "    ftl images        # shows aws images"
+      puts "    ftl snapshots     # shows aws snapshots"
+      puts "    ftl tags          # shows aws tags"
+      puts "    ftl volumes       # shows aws volumes"
     end
 
     def method_missing(*args)
-      help
+      begin
+        method = args.first
+        options = args[1]
+        if @con.respond_to? method
+          case options.first
+          when 'headers'
+            print method
+            p @con.send(method).first.attributes.keys
+          when /^headers=/
+            headerz = options.first.gsub("headers=",'').split(',')
+            p @con.send(method).table(headerz)
+          else
+            p @con.send(method).table(headers(method))
+          end
+        else
+          help
+          super(*args)
+        end
+      rescue 
+        help
+        super(*args)
+      end
     end
 
+    def headers(type=nil)
+      case type
+      when :snapshots
+        [:id, :volume_id, :state, :volume_size, :description, :"tags.Name"]
+      when :volumes
+        [:server_id, :id, :size, :snapshot_id, :availability_zone, :state, :"tags.Name"]
+      else
+        [:id, :image_id, :flavor_id, :availability_zone, :state, :"tags.Name"]
+      end
+    end
+
+    def extract_headers
+      # POSSIBLE HEADERS:::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+      # ami_launch_index | architecture | aws_availability_zone | aws_image_id 
+      # aws_instance_id | aws_instance_type | aws_kernel_id | aws_launch_time
+      # aws_owner | aws_product_codes | aws_reason | aws_reservation_id 
+      # aws_state | aws_state_code | block_device_mappings | client_token 
+      # dns_name | groups | hypervisor | ip_address | monitoring_state  
+      # placement_tenancy | private_dns_name | private_ip_address | requester_id 
+      # root_device_name | root_device_type | ssh_key_name | state_reason_code 
+      # state_reason_message | tags | virtualization_type
+      # ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+      # p args
+      # Fog::AWS::
+      # RightAWS
+      @extract_headers ||= [:id, :image_id, :flavor_id, :availability_zone, :state, :tags]
+    end
+
+    def server_instances(args={})
+      # @aws.describe_instances
+      # vs
+      # @servers ||= @con.servers.map {|s| extract_headers.inject({}) {|hash, header| hash[header] = s[header]; hash }}
+      # What a hack. 
+      @servers ||= @con.servers.all
+      # Less of a hack
+    end
+
+  private
+  
+  def default_user_script
   end
 
 end
 
-# TODO:
-# Server:
-#   establish connection
-#   read config (what AMI)
-#   list available pairing instances
-#   start up instance
-#   kill instance
-#
-# Client
-#   list available pairing instances (via server call)
-#   create new instance
-#   connect to new instance
-#   destroy instance
+
+
+end

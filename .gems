@@ -1,6 +1,0 @@
-sinatra --version 0.9.6
-activesupport --version  2.3.5
-aws
-httparty
-
-
