@@ -44,6 +44,7 @@ Usage: ftl [<config-options>] <command> [<command-options>]
 ACCESS_KEY_ID: 
 SECRET_ACCESS_KEY: 
 :ami: ami-a29943cb
+:username: ubuntu
 :instance_type: c1.medium
 :default_username: ubuntu
 :instance_script:
@@ -90,20 +91,15 @@ SECRET_ACCESS_KEY:
 
 
     def start(args={})
-
-      if INSTANCE_SCRIPT.nil?
-        # instance_script = '#!' 
-      else
-        # instance_script = INSTANCE_SCRIPT[/^#!/] ? INSTANCE_SCRIPT : URI.parse(INSTANCE_SCRIPT).read
-      end
-
       if args.first.nil?
         puts "Please provide a short name for instance, like: ftl start ninjaserver"
         return
       end
       puts "Spinning up FTL..."
-      i = @aws.launch_instances(options[:ami], :key_name => options[:key_name], :tags => {"Name" => args.first}, :user_data => options[:instance_script], :instance_type => options[:instance_type])
-      i = con.servers.new()
+      # i = @aws.launch_instances(options[:ami], :key_name => options[:key_name], :tags => {"Name" => args.first}, :user_data => options[:instance_script], :instance_type => options[:instance_type])
+      i = con.servers.create(:image_id => options[:ami], :flavor_id => options[:instance_type], :username => options[:username])
+
+      p i
       p i[:id]
       
       # aws.create_tags(i.first[:], {"Name" => "my_awesome_server"})
@@ -130,24 +126,22 @@ SECRET_ACCESS_KEY:
         return
       end
       puts "Spinning down FTL..."
-      @aws.terminate_instances(args.first)
+      con.servers.destroy(args.first)
     end
     alias :kill     :destroy 
     alias :down     :destroy 
     alias :shutdown :destroy 
 
-
-    # ftl info <instance-id|tag.name>
     def info(args={})
       p @con.servers.get(args.first)
     end
+    alias :i :info
 
-    # ftl list
-    # ftl list /regex/ 
     def list(args={})
       # Formatador.display_table(servers, headers)
       server_instances.table(options[:headers]||headers)
     end
+    alias :l :list
 
     def image(args={})
       Formatador.display_table(@con.images.find(:id => args.first))
@@ -188,29 +182,11 @@ SECRET_ACCESS_KEY:
     end
 
     def extract_headers
-      # POSSIBLE HEADERS:::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-      # ami_launch_index | architecture | aws_availability_zone | aws_image_id 
-      # aws_instance_id | aws_instance_type | aws_kernel_id | aws_launch_time
-      # aws_owner | aws_product_codes | aws_reason | aws_reservation_id 
-      # aws_state | aws_state_code | block_device_mappings | client_token 
-      # dns_name | groups | hypervisor | ip_address | monitoring_state  
-      # placement_tenancy | private_dns_name | private_ip_address | requester_id 
-      # root_device_name | root_device_type | ssh_key_name | state_reason_code 
-      # state_reason_message | tags | virtualization_type
-      # ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-      # p args
-      # Fog::AWS::
-      # RightAWS
       @extract_headers ||= [:id, :image_id, :flavor_id, :availability_zone, :state, :tags]
     end
 
     def server_instances(args={})
-      # @aws.describe_instances
-      # vs
-      # @servers ||= @con.servers.map {|s| extract_headers.inject({}) {|hash, header| hash[header] = s[header]; hash }}
-      # What a hack. 
       @servers ||= @con.servers.all
-      # Less of a hack
     end
 
   private
