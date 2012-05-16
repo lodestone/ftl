@@ -108,8 +108,7 @@ module Ftl
     alias :new    :start
 
     def connect(args={})
-      match = find_instance(args.first)
-      if match
+      if match = find_instance(args.first)
         exec("ssh #{options[:username]||'root'}@#{match[:dns_name]}")
       else
         puts "Typo alert! No server found!"
