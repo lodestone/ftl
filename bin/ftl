@@ -3,7 +3,6 @@ $LOAD_PATH << 'lib'
 require 'optparse'
 require 'ftl'
 
-
 options = {}
 optparse = OptionParser.new do |opts|
 
@@ -23,12 +22,6 @@ optparse = OptionParser.new do |opts|
 
 end
 
-
 optparse.parse!
-
-p options
-p ARGV 
-
-
 Ftl::Client.new(ARGV, options)
 

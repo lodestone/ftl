@@ -80,6 +80,11 @@ module Ftl
       puts "======Please open #{default_config_file} and set ACCESS_KEY_ID and SECRET_ACCESS_KEY====\n\n" if aws_credentials_absent?
     end
 
+    def display(message)
+      msg = message.is_a?(String) ? message : message.inspect
+      Formatador.display_line(msg)
+    end
+
     def aws_credentials_absent?
       options['ACCESS_KEY_ID'].nil? || options['SECRET_ACCESS_KEY'].nil?
     end
@@ -89,18 +94,13 @@ module Ftl
         puts "Please provide a short name for instance, like: ftl start ninjaserver"
         return
       end
-      puts "Spinning up FTL..."
-      # i = @aws.launch_instances(options[:ami], :key_name => options[:key_name], :tags => {"Name" => args.first}, :user_data => options[:instance_script], :instance_type => options[:instance_type])
-      i = con.servers.create(:image_id => options[:ami], :flavor_id => options[:instance_type], :username => options[:username])
-
+      display "Spinning up FTL..."
+      i = con.servers.create(:key_name => options[:keypair], :groups => options[:groups], :image_id => options[:ami], :flavor_id => options[:instance_type], :username => options[:username])
       tag = con.tags.new(:key => "Name", :value => args.first)
       tag.resource_id = i.id
       tag.resource_type = 'instance'
       tag.save
-      # p i[:id]
-      
-      p i
-      # aws.create_tags(i.first[:], {"Name" => "my_awesome_server"})
+      display i
     end
     alias :up     :start 
     alias :spinup :start
@@ -111,7 +111,7 @@ module Ftl
       if match = find_instance(args.first)
         exec("ssh #{options[:username]||'root'}@#{match[:dns_name]}")
       else
-        puts "Typo alert! No server found!"
+        display "Typo alert! No server found!"
       end
     end
     alias :c :connect
@@ -121,7 +121,7 @@ module Ftl
         puts "Please provide the name (or partial name for the instance(s) you want to delete. For instance, like: ftl destroy ninja"
         return
       end
-      puts "Spinning down FTL..."
+      display "Spinning down FTL..."
       instance = find_instance(args.first)
       instance.destroy
     end
@@ -130,12 +130,11 @@ module Ftl
     alias :shutdown :destroy 
 
     def info(args={})
-      p find_instance(args.first)
+      display find_instance(args.first)
     end
     alias :i :info
 
     def list(args={})
-      # Formatador.display_table(servers, headers)
       server_instances.table(options[:headers]||headers)
     end
     alias :l :list
@@ -155,7 +154,7 @@ module Ftl
         method = args.first
         options = args[1]
         if con.respond_to? method
-          p con.send(method).table(headers(method))
+          display con.send(method).table(headers(method))
         else
           Ftl.help
           # super(*args)
