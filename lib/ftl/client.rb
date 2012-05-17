@@ -38,7 +38,7 @@ module Ftl
     def initialize(args=nil, opts={})
       load_config(opts)
       @con = Fog::Compute.new(:provider => 'AWS', :aws_secret_access_key => options['SECRET_ACCESS_KEY'], :aws_access_key_id => options['ACCESS_KEY_ID'])
-      if args
+      if args.length > 0
         arg = args.reverse.pop
         send(arg, args - [arg])
       else
