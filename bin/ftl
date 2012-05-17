@@ -15,9 +15,8 @@ optparse = OptionParser.new do |opts|
     options[:headers] = headers
   end
 
-  opts.on('-c', '--config FILE', "provide custom config file") do
-    puts "Supplied config file"
-    puts opts
+  opts.on('-c', '--config FILE', "provide custom config file") do |file|
+    options[:config] = file
   end
 
 end

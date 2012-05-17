@@ -143,17 +143,21 @@ SECRET_ACCESS_KEY:
 
     def load_config(opts={})
       # TODO Make this less shitty. Such a common pattern.
-      default_config_name = 'ftl.yml'
-      default_config_dir  = '/.ftl/'
-      default_config_home = "#{ENV['HOME']}#{default_config_dir}"
-      default_config_file = "#{default_config_home}#{default_config_name}"
-      if Dir.exist?(default_config_home) 
-        if !File.exist?(default_config_file)     
+      if opts[:config]
+        default_config_file = opts[:config]
+      else
+        default_config_name = 'ftl.yml'
+        default_config_dir  = '/.ftl/'
+        default_config_home = "#{ENV['HOME']}#{default_config_dir}"
+        default_config_file = "#{default_config_home}#{default_config_name}"
+        if Dir.exist?(default_config_home) 
+          if !File.exist?(default_config_file)     
+            File.open(default_config_file, 'w') {|f| f << ftl_yml }
+          end
+        else
+          Dir.mkdir(default_config_home)
           File.open(default_config_file, 'w') {|f| f << ftl_yml }
         end
-      else
-        Dir.mkdir(default_config_home)
-        File.open(default_config_file, 'w') {|f| f << ftl_yml }
       end
       @options = YAML.load_file(default_config_file)
       @options = @options.merge(opts)
