@@ -11,7 +11,7 @@ optparse = OptionParser.new do |opts|
     exit
   end
 
-  opts.on('-h', '--headers FILE', Array, "provide custom config file") do |headers|
+  opts.on('-d', '--headers FILE', Array, "provide custom config file") do |headers|
     options[:headers] = headers
   end
 

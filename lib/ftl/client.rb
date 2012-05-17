@@ -126,11 +126,11 @@ ACCESS_KEY_ID:
 SECRET_ACCESS_KEY: 
 :ami: ami-a29943cb # Ubuntu 12.04 LTS Precise Pangolin
 :username: ubuntu
-:instance_type: c1.medium
+:instance_type: m1.small
 :default_username: ubuntu
 :instance_script: |
   #!/bin/sh
-  touch file.touched
+  touch /root/file.touched
 :spinup_script: | 
   class Samurai
     def slice!
