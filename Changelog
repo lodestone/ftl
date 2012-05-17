@@ -1,0 +1,7 @@
+Release Version 0.2.0 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+ * First revamped release handling AWS in a more generic way
+
+Previous releases were focused on starting up Pair Programming servers. 
+The latest releases can also be used for this but are more useful in a generic 
+AWS situation.
