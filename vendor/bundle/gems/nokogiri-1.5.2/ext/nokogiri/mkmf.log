@@ -51,7 +51,7 @@ ld: warning: directory not found for option '-L/usr/local/Cellar/libxml2/2.7.8/l
 ld: warning: directory not found for option '-L/opt/local/lib'
 Undefined symbols for architecture x86_64:
   "_iconv_open", referenced from:
-      _t in ccouuvwt.o
+      _t in cc0C8Fsk.o
 ld: symbol(s) not found for architecture x86_64
 collect2: ld returned 1 exit status
 checked program was:

@@ -6,9 +6,15 @@ module Ftl
       commands: start, kill, list, connect, servers, tags, images, snapshots, volumes
       examples:
         ftl start ninja                    # starts an instance named 'ninja'
+        ftl up ninja                       # starts an instance named 'ninja'
+        ftl spinup ninja                   # starts an instance named 'ninja'
+        ftl launch ninja                   # starts an instance named 'ninja'
+        ftl start ninja                    # starts an instance named 'ninja'
         ftl list                           # shows running instances and status
+        ftl l                              # shows running instances and status
         ftl connect ninja                  # connects to instance named 'ninja'
-        ftl kill nin                       # kills all instances matching /nin/
+        ftl kill ninja                     # kills instance Named "ninja"
+        ftl kill i-123456                  # kills instance with id i-123456
         ftl images                         # shows aws images
         ftl snapshots                      # shows aws snapshots
         ftl tags                           # shows aws tags
@@ -16,7 +22,7 @@ module Ftl
         ftl --config=~/ftl.yml servers     # Uses custom config file 
         ftl -c=~/ftl.yml servers           # Uses custom config file 
         ftl --headers=id,tags.Name servers # Uses headers 
-        ftl servers headers                # Show possible headers
+        ftl headers servers                # Show possible headers for servers
     }
   end
 
@@ -32,61 +38,12 @@ module Ftl
     def initialize(args=nil, opts={})
       load_config(opts)
       @con = Fog::Compute.new(:provider => 'AWS', :aws_secret_access_key => options['SECRET_ACCESS_KEY'], :aws_access_key_id => options['ACCESS_KEY_ID'])
-      Ftl.help and return if args.nil?
       if args
         arg = args.reverse.pop
         send(arg, args - [arg])
-      end
-    end
-
-    def ftl_yml
-      %Q%
-      ACCESS_KEY_ID: 
-      SECRET_ACCESS_KEY: 
-      :ami: ami-a29943cb
-      :username: ubuntu
-      :instance_type: c1.medium
-      :default_username: ubuntu
-      :instance_script:
-      #!/bin/sh
-      touch file.touched
-      :spinup_script:
-      class Samurai;
-        def slice!;
-          puts "slice";
-        end;
-      end;
-      Samurai.new.slice!
-
-      %
-    end
-
-    def load_config(opts={})
-      # TODO Make this less shitty. Such a common pattern.
-      default_config_name = 'ftl.yml'
-      default_config_dir  = '/.ftl/'
-      default_config_home = "#{ENV['HOME']}#{default_config_dir}"
-      default_config_file = "#{default_config_home}#{default_config_name}"
-      if Dir.exist?(default_config_home) 
-        if !File.exist?(default_config_file)     
-          File.open(default_config_file, 'w') {|f| f << ftl_yml }
-        end
       else
-        Dir.mkdir(default_config_home)
-        File.open(default_config_file, 'w') {|f| f << ftl_yml }
+        Ftl.help
       end
-      @options = YAML.load_file(default_config_file)
-      @options = @options.merge(opts)
-      puts "======Please open #{default_config_file} and set ACCESS_KEY_ID and SECRET_ACCESS_KEY====\n\n" if aws_credentials_absent?
-    end
-
-    def display(message)
-      msg = message.is_a?(String) ? message : message.inspect
-      Formatador.display_line(msg)
-    end
-
-    def aws_credentials_absent?
-      options['ACCESS_KEY_ID'].nil? || options['SECRET_ACCESS_KEY'].nil?
     end
 
     def start(args={})
@@ -109,6 +66,7 @@ module Ftl
       display i
     end
     alias :up     :start 
+    alias :launch :start 
     alias :spinup :start
     alias :create :start
     alias :new    :start
@@ -131,6 +89,7 @@ module Ftl
       instance = find_instance(args.first)
       instance.destroy
     end
+    alias :d        :destroy 
     alias :kill     :destroy 
     alias :down     :destroy 
     alias :shutdown :destroy 
@@ -140,8 +99,8 @@ module Ftl
     end
     alias :i :info
 
-    def list(args={})
-      server_instances.table(options[:headers]||headers)
+    def list(args=[:servers])
+      server_instances.table(_headers_for(args.first))
     end
     alias :l :list
 
@@ -150,9 +109,82 @@ module Ftl
     end
 
     def headers(args={})
-      print 'x'
-      print[args.first]
-      con.send(args.first).first.attributes.keys
+      display "Showing header options for #{args.first}"
+      display con.send(args.first).first.attributes.keys
+    end
+
+    def server_instances(args={})
+      @servers ||= @con.servers.all
+    end
+
+    ###########################################################################
+    private
+
+    def ftl_yml
+%Q%
+ACCESS_KEY_ID: 
+SECRET_ACCESS_KEY: 
+:ami: ami-a29943cb # Ubuntu 12.04 LTS Precise Pangolin
+:username: ubuntu
+:instance_type: c1.medium
+:default_username: ubuntu
+:instance_script: |
+  #!/bin/sh
+  touch file.touched
+:spinup_script: | 
+  class Samurai
+    def slice!
+      puts "slice"
+    end
+  end
+  Samurai.new.slice!
+%
+    end
+
+    def load_config(opts={})
+      # TODO Make this less shitty. Such a common pattern.
+      default_config_name = 'ftl.yml'
+      default_config_dir  = '/.ftl/'
+      default_config_home = "#{ENV['HOME']}#{default_config_dir}"
+      default_config_file = "#{default_config_home}#{default_config_name}"
+      if Dir.exist?(default_config_home) 
+        if !File.exist?(default_config_file)     
+          File.open(default_config_file, 'w') {|f| f << ftl_yml }
+        end
+      else
+        Dir.mkdir(default_config_home)
+        File.open(default_config_file, 'w') {|f| f << ftl_yml }
+      end
+      @options = YAML.load_file(default_config_file)
+      @options = @options.merge(opts)
+      puts "======Please open #{default_config_file} and set ACCESS_KEY_ID and SECRET_ACCESS_KEY====\n\n" if aws_credentials_absent?
+    end
+
+    def find_instance(name)
+      id_match  = server_instances.find{|i| i[:id] == name } if name[/^i-/]
+      tag_match = server_instances.find{|i| !i.tags.nil? && i.tags['Name'] == name }
+      id_match || tag_match
+    end
+
+    def _headers_for(object)
+      return options[:headers].map(&:to_sym) if options[:headers]
+      case object
+      when :snapshots
+        [:id, :volume_id, :state, :volume_size, :description, :"tags.Name"]
+      when :volumes
+        [:server_id, :id, :size, :snapshot_id, :availability_zone, :state, :"tags.Name"]
+      when nil
+        [:id, :image_id, :flavor_id, :availability_zone, :state, :"tags.Name"]
+      end
+    end
+
+    def aws_credentials_absent?
+      options['ACCESS_KEY_ID'].nil? || options['SECRET_ACCESS_KEY'].nil?
+    end
+
+    def display(message)
+      msg = message.is_a?(String) ? message : message.inspect
+      Formatador.display_line(msg)
     end
 
     def method_missing(*args)
@@ -160,46 +192,12 @@ module Ftl
         method = args.first
         options = args[1]
         if con.respond_to? method
-          display con.send(method).table(headers(method))
+          display con.send(method).table(_headers_for(method))
         else
           Ftl.help
-          # super(*args)
         end
       rescue 
-        Ftl.help
-        # super(*args)
       end
-    end
-
-    def headers(args={})
-      display "Showing header options for #{args.first}"
-      return options[:headers].map(&:to_sym) if options[:headers]
-      headerz = case args.first
-      when :snapshots
-        [:id, :volume_id, :state, :volume_size, :description, :"tags.Name"]
-      when :volumes
-        [:server_id, :id, :size, :snapshot_id, :availability_zone, :state, :"tags.Name"]
-      else
-        [:id, :image_id, :flavor_id, :availability_zone, :state, :"tags.Name"]
-      end
-      display con.send(args.first).first.attributes.keys
-    end
-
-    def extract_headers
-      @extract_headers ||= [:id, :image_id, :flavor_id, :availability_zone, :state, :tags]
-    end
-
-    def server_instances(args={})
-      @servers ||= @con.servers.all
-    end
-
-    private
-
-
-    def find_instance(name)
-      id_match  = server_instances.find{|i| i[:id] == name } if name[/^i-/]
-      tag_match = server_instances.find{|i| !i.tags.nil? && i.tags['Name'] == name }
-      id_match || tag_match
     end
 
   end
