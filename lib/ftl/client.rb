@@ -99,8 +99,8 @@ module Ftl
     end
     alias :i :info
 
-    def list(args=[:servers])
-      server_instances.table(_headers_for(args.first))
+    def list(opts = [:servers])
+      con.send(opts.first).table(_headers_for(opts.first))
     end
     alias :l :list
 
@@ -172,12 +172,12 @@ SECRET_ACCESS_KEY:
 
     def _headers_for(object)
       return options[:headers].map(&:to_sym) if options[:headers]
-      case object
+      case object.to_sym
       when :snapshots
         [:id, :volume_id, :state, :volume_size, :description, :"tags.Name"]
       when :volumes
         [:server_id, :id, :size, :snapshot_id, :availability_zone, :state, :"tags.Name"]
-      when nil
+      default
         [:id, :image_id, :flavor_id, :availability_zone, :state, :"tags.Name"]
       end
     end
@@ -194,7 +194,7 @@ SECRET_ACCESS_KEY:
     def method_missing(*args)
       begin
         method = args.first
-        options = args[1]
+        # opts = args[1]
         if con.respond_to? method
           display con.send(method).table(_headers_for(method))
         else

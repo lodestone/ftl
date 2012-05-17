@@ -3,8 +3,10 @@
 * Enable launching of spot instances
 * ftl edit should edit ~/.ftl/ftl.yml with $EDITOR
 * Allow multiple named launch templates
-    
-    # Example:
+* Tests    
+
+### Example of named templates:
+
     :templates:
       :ninja:
         :username: ninja
@@ -12,4 +14,5 @@
       :samurai:
         :username: samurai
         :ami: ami-456789
+
 
