@@ -110,7 +110,7 @@ module Ftl
 
     def headers(args={})
       display "Showing header options for #{args.first}"
-      display con.send(args.first).first.attributes.keys
+      display con.send(args.first).new.attributes.keys
     end
 
     def server_instances(args={})
