@@ -5,6 +5,7 @@ require "ftl/server"
 require "fog"
 require 'formatador'
 require 'ftl/fog_lights'
+require 'ftl/formatador_table'
 
 module Ftl
   # I'm a module!
