@@ -1,3 +1,8 @@
+Release Version 0.2.1 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+  * Adds templates
+  * Fixes bugs
+
 Release Version 0.2.0 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
  * First revamped release handling AWS in a more generic way

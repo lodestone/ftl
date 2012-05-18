@@ -1,0 +1,31 @@
+#!/bin/sh
+# Help
+echo "bin/ftl"
+bin/ftl 
+
+echo "bin/ftl -h"
+bin/ftl -h
+
+echo "bin/ftl --help"
+bin/ftl --help
+
+# Servers
+echo "bin/ftl list"
+bin/ftl list
+
+echo "bin/ftl list servers"
+bin/ftl list servers
+
+echo "bin/ftl servers"
+bin/ftl servers
+
+# Volumes
+echo "bin/ftl volumes"
+bin/ftl volumes
+
+echo "bin/ftl list volumes"
+bin/ftl list volumes
+
+# Key Pairs
+echo "bin/ftl key_pairs"
+bin/ftl key_pairs

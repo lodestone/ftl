@@ -13,7 +13,7 @@ module Ftl
         ftl list                           # shows running instances and status
         ftl l                              # shows running instances and status
         ftl connect ninja                  # connects to instance named 'ninja'
-        ftl kill ninja                     # kills instance Named "ninja"
+        ftl kill ninja                     # kills instances matching name /ninja/
         ftl kill i-123456                  # kills instance with id i-123456
         ftl images                         # shows aws images
         ftl snapshots                      # shows aws snapshots
@@ -38,7 +38,7 @@ module Ftl
     def initialize(args=nil, opts={})
       load_config(opts)
       @con = Fog::Compute.new(:provider => 'AWS', :aws_secret_access_key => options['SECRET_ACCESS_KEY'], :aws_access_key_id => options['ACCESS_KEY_ID'])
-      if args.length > 0
+      if args && args.length > 0
         arg = args.reverse.pop
         send(arg, args - [arg])
       else
@@ -52,18 +52,20 @@ module Ftl
         return
       end
       display "Spinning up FTL..."
-      i = con.servers.create(:user_data => options[:user_data],
-                             :key_name  => options[:keypair], 
-                             :groups    => options[:groups], 
-                             :image_id  => options[:ami], 
-                             :flavor_id => options[:instance_type], 
-                             :username  => options[:username]
-                             )
+      server = con.servers.create(:user_data         => options[:user_data],
+                                  :key_name          => options[:keypair], 
+                                  :groups            => options[:groups], 
+                                  :image_id          => options[:ami], 
+                                  :availability_zone => options[:availability_zone], 
+                                  :flavor_id         => options[:instance_type], 
+                                  :username          => options[:username]
+                                  )
       tag = con.tags.new(:key => "Name", :value => args.first)
-      tag.resource_id = i.id
+      tag.resource_id = server.id
       tag.resource_type = 'instance'
       tag.save
-      display i
+      display server
+      eval(options[:post_script]) if options[:post_script]
     end
     alias :up     :start 
     alias :launch :start 
@@ -72,7 +74,7 @@ module Ftl
     alias :new    :start
 
     def connect(args={})
-      if match = find_instance(args.first)
+      if match = find_instances(args.first).select{|i| i.state == "running" }.first
         exec("ssh #{options[:username]||'root'}@#{match[:dns_name]}")
       else
         display "Typo alert! No server found!"
@@ -86,8 +88,8 @@ module Ftl
         return
       end
       display "Spinning down FTL..."
-      instance = find_instance(args.first)
-      instance.destroy
+      instance = find_instances(args.first)
+      instance.map(&:destroy)
     end
     alias :d        :destroy 
     alias :kill     :destroy 
@@ -99,7 +101,8 @@ module Ftl
     end
     alias :i :info
 
-    def list(opts = [:servers])
+    def list(opts)
+      opts = [:servers] if opts.empty?
       con.send(opts.first).table(_headers_for(opts.first))
     end
     alias :l :list
@@ -110,7 +113,7 @@ module Ftl
 
     def headers(args={})
       display "Showing header options for #{args.first}"
-      display con.send(args.first).new.attributes.keys
+      display con.send(args.first).first.attributes.keys
     end
 
     def server_instances(args={})
@@ -165,8 +168,12 @@ SECRET_ACCESS_KEY:
     end
 
     def find_instance(name)
-      id_match  = server_instances.find{|i| i[:id] == name } if name[/^i-/]
-      tag_match = server_instances.find{|i| !i.tags.nil? && i.tags['Name'] == name }
+      find_instances(name).first
+    end
+
+    def find_instances(name)
+      id_match  = server_instances.select{|i| i[:id] == name } if name[/^i-/]
+      tag_match = server_instances.select{|i| !i.tags.nil? && i.tags['Name'] && i.tags['Name'][name] }
       id_match || tag_match
     end
 
@@ -177,7 +184,9 @@ SECRET_ACCESS_KEY:
         [:id, :volume_id, :state, :volume_size, :description, :"tags.Name"]
       when :volumes
         [:server_id, :id, :size, :snapshot_id, :availability_zone, :state, :"tags.Name"]
-      default
+      when nil
+        [:id, :image_id, :flavor_id, :availability_zone, :state, :"tags.Name"]
+      else
         [:id, :image_id, :flavor_id, :availability_zone, :state, :"tags.Name"]
       end
     end
