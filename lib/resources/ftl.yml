@@ -1,0 +1,19 @@
+ACCESS_KEY_ID: 
+SECRET_ACCESS_KEY: 
+:ami: ami-a29943cb # Ubuntu 12.04 LTS Precise Pangolin
+:username: ubuntu
+:instance_type: m1.small
+:instance_script: |
+  #!/bin/sh
+  touch /root/file.touched
+:spinup_script: | 
+
+:templates:
+  :default:
+    :ami: ami-a29943cb # Ubuntu 12.04 LTS Precise Pangolin
+    :username: ubuntu
+    :instance_type: m1.small
+    :instance_script: |
+      #!/bin/sh
+      touch /root/file.touched
+    :spinup_script: | 
