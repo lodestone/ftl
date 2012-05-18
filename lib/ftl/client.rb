@@ -61,7 +61,7 @@ module Ftl
                                   :availability_zone => opts[:availability_zone], 
                                   :flavor_id         => opts[:instance_type], 
                                   :username          => opts[:username],
-                                  :tags              => opts[:tags] + [args.first]
+                                  :tags              => opts[:tags].merge(:Name => args.first)
                                   )
       display server
       eval(options[:post_script]) if options[:post_script]
@@ -122,6 +122,11 @@ module Ftl
     end
     alias :x :connect
     alias :ssh :connect
+
+    def status(args={})
+      server = find_instance(args.first)
+      display server
+    end
 
     def start(args={})
       display "Starting stopped instances is not implemented yet. Stay tuned true believers."
@@ -220,8 +225,9 @@ module Ftl
 
     def find_instances(name)
       id_match  = server_instances.select{|i| i[:id] == name } if name[/^i-/]
+      exact_tag_match = server_instances.select{|i| !i.tags.nil? && i.tags['Name'] && i.tags['Name'] == name }
       tag_match = server_instances.select{|i| !i.tags.nil? && i.tags['Name'] && i.tags['Name'][name] }
-      id_match || tag_match
+      id_match || exact_tag_match || tag_match
     end
 
     def _headers_for(object)

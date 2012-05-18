@@ -47,4 +47,8 @@ Install is easy.
 4. Push to the branch (`git push origin my-new-feature`)
 5. Create new Pull Request
 
-© 2012 Matthew Petty Twitter:@mattpetty Github:@lodestone Email:lodestone@gmail.com
+© 2012 Matthew Petty 
+
+* Twitter: [@mattpetty](http://twitter.com/mattpetty) 
+* Github: [@lodestone](http://github.com/lodestone) 
+* Email: [lodestone@gmail.com](mailto:lodestone@gmail.com)
