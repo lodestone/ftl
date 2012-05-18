@@ -120,28 +120,16 @@ module Ftl
       @servers ||= @con.servers.all
     end
 
+    def edit(args={})
+      display "You need to set [bold]$EDITOR[/] environment variable" if ENV['EDITOR'].nil?
+      `$EDITOR ~/.ftl/ftl.yml`
+    end
+
     ###########################################################################
     private
 
     def ftl_yml
-%Q%
-ACCESS_KEY_ID: 
-SECRET_ACCESS_KEY: 
-:ami: ami-a29943cb # Ubuntu 12.04 LTS Precise Pangolin
-:username: ubuntu
-:instance_type: m1.small
-:default_username: ubuntu
-:instance_script: |
-  #!/bin/sh
-  touch /root/file.touched
-:spinup_script: | 
-  class Samurai
-    def slice!
-      puts "slice"
-    end
-  end
-  Samurai.new.slice!
-%
+      File.open("lib/resources/ftl.yml").read
     end
 
     def load_config(opts={})
@@ -153,11 +141,11 @@ SECRET_ACCESS_KEY:
         default_config_dir  = '/.ftl/'
         default_config_home = "#{ENV['HOME']}#{default_config_dir}"
         default_config_file = "#{default_config_home}#{default_config_name}"
-        if Dir.exist?(default_config_home) 
-          if !File.exist?(default_config_file)     
+        if Dir.exist?(default_config_home) # Directory exists 
+          if !File.exist?(default_config_file) # File does not
             File.open(default_config_file, 'w') {|f| f << ftl_yml }
           end
-        else
+        else # Directory does not exist 
           Dir.mkdir(default_config_home)
           File.open(default_config_file, 'w') {|f| f << ftl_yml }
         end
