@@ -1,7 +1,9 @@
 Release Version 0.2.1 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-  * Adds templates
-  * Fixes bugs
+  * Adds templates feature to config file
+  * Start and cancel spot requests
+  * Execution without parameters shows help screen
+  * Fixes various bugs
 
 Release Version 0.2.0 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
