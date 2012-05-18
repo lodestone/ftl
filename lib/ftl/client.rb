@@ -10,6 +10,9 @@ module Ftl
         ftl connect ninja                  # Connects to instance named 'ninja'
         ftl kill ninja                     # Kills instances matching name /ninja/
         ftl kill i-123456                  # Kills instance with id i-123456
+        ftl spot ninja 0.02                # Request spot instance using template :ninja for $0.02
+        ftl cancel sir-123456              # Cancel spot instance with id sir-123456
+        ftl spots                          # Shows AWS spot requests
         ftl images                         # Shows AWS images
         ftl snapshots                      # Shows AWS snapshots
         ftl tags                           # Shows AWS tags
