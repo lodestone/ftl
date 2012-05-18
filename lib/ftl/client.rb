@@ -91,11 +91,23 @@ module Ftl
                                         :tags              => {:Name => args.first}
                                         )
       display server
-      eval(options[:post_script]) if options[:post_script]
     end
 
     def spots(args={})
       con.spot_requests.table(_headers_for(:spot_requests))
+    end
+
+    def cancel(args={})
+      if args.first.nil?
+        display "Please provide the id for the spot request to cancel."
+        return
+      end
+      spot = con.spot_requests.get(args.first)
+      if spot && spot.destroy
+        display "Canceled Spot Instance #{spot.id}."
+      else
+        display "Whups, spot instance not found!"
+      end
     end
 
     def connect(args={})
@@ -118,7 +130,7 @@ module Ftl
 
     def destroy(args={})
       if args.first.nil?
-        puts "Please provide the name (or partial name for the instance(s) you want to delete. For instance, like: ftl destroy ninja"
+        display "Please provide the name (or partial name for the instance(s) you want to delete. For instance, like: ftl destroy ninja"
         return
       end
       display "Spinning down FTL..."
