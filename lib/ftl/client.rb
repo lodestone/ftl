@@ -3,26 +3,23 @@ module Ftl
   def self.help_message
     %Q{
     Usage: [bold]ftl[/] \[<config-options>\] <command> \[<command-options>\]
-      commands: start, kill, list, connect, servers, tags, images, snapshots, volumes
+      commands: start, kill, list, edit, connect, servers, tags, images, snapshots, volumes
       examples:
-        ftl start ninja                    # starts an instance named 'ninja'
-        ftl up ninja                       # starts an instance named 'ninja'
-        ftl spinup ninja                   # starts an instance named 'ninja'
-        ftl launch ninja                   # starts an instance named 'ninja'
-        ftl start ninja                    # starts an instance named 'ninja'
-        ftl list                           # shows running instances and status
-        ftl l                              # shows running instances and status
-        ftl connect ninja                  # connects to instance named 'ninja'
-        ftl kill ninja                     # kills instances matching name /ninja/
-        ftl kill i-123456                  # kills instance with id i-123456
-        ftl images                         # shows aws images
-        ftl snapshots                      # shows aws snapshots
-        ftl tags                           # shows aws tags
-        ftl volumes                        # shows aws volumes
-        ftl --config=~/ftl.yml servers     # Uses custom config file 
-        ftl -c=~/ftl.yml servers           # Uses custom config file 
-        ftl --headers=id,tags.Name servers # Uses headers 
+        ftl launch ninja                   # Launches an instance named 'ninja'
+        ftl list                           # Shows running instances and status
+        ftl connect ninja                  # Connects to instance named 'ninja'
+        ftl kill ninja                     # Kills instances matching name /ninja/
+        ftl kill i-123456                  # Kills instance with id i-123456
+        ftl images                         # Shows AWS images
+        ftl snapshots                      # Shows AWS snapshots
+        ftl tags                           # Shows AWS tags
+        ftl volumes                        # Shows AWS volumes
         ftl headers servers                # Show possible headers for servers
+        ftl headers volumes                # Show possible headers for volumes
+        ftl edit                           # Edit ftl.yml with your $EDITOR
+        ftl --config=~/ftl.yml servers     # Uses custom config file 
+        ftl --headers=id,tags.Name servers # Uses specified headers 
+        ftl --version                      # Show version number
     }
   end
 
@@ -46,32 +43,60 @@ module Ftl
       end
     end
 
-    def start(args={})
+    def launch(args={})
       if args.first.nil?
-        puts "Please provide a short name for instance, like: ftl start ninjaserver"
+        display "Please provide a short name for instance\n\t[bold]ftl[/] launch <name>"
         return
       end
       display "Spinning up FTL..."
-      server = con.servers.create(:user_data         => options[:user_data],
-                                  :key_name          => options[:keypair], 
-                                  :groups            => options[:groups], 
-                                  :image_id          => options[:ami], 
-                                  :availability_zone => options[:availability_zone], 
-                                  :flavor_id         => options[:instance_type], 
-                                  :username          => options[:username]
+      opts = options
+      opts = options[:templates][args.first.to_sym] if !options[:templates][args.first.to_sym].nil?
+      server = con.servers.create(:user_data         => opts[:user_data],
+                                  :key_name          => opts[:keypair], 
+                                  :groups            => opts[:groups], 
+                                  :image_id          => opts[:ami], 
+                                  :availability_zone => opts[:availability_zone], 
+                                  :flavor_id         => opts[:instance_type], 
+                                  :username          => opts[:username],
+                                  :tags              => opts[:tags] + [args.first]
                                   )
-      tag = con.tags.new(:key => "Name", :value => args.first)
-      tag.resource_id = server.id
-      tag.resource_type = 'instance'
-      tag.save
       display server
       eval(options[:post_script]) if options[:post_script]
     end
-    alias :up     :start 
-    alias :launch :start 
-    alias :spinup :start
-    alias :create :start
-    alias :new    :start
+    alias :up     :launch
+    alias :spinup :launch
+    alias :create :launch
+    alias :new    :launch
+
+    def spot(args={})
+      if args.first.nil?
+        display "Please provide a short name for instance\n\t[bold]ftl[/] spot <name> <price>"
+        return
+      end
+      if args[1].nil?
+        display "Please provide a price for spot request\n\t[bold]ftl[/] spot <name> <price>"
+        return
+      end
+      display "Spinning up FTL..."
+      opts = options
+      opts = options[:templates][args.first.to_sym] if !options[:templates][args.first.to_sym].nil?
+      server = con.spot_requests.create(:user_data         => opts[:user_data],
+                                        :price             => args[1],
+                                        :key_name          => opts[:keypair], 
+                                        :groups            => opts[:groups], 
+                                        :image_id          => opts[:ami], 
+                                        :availability_zone => opts[:availability_zone], 
+                                        :flavor_id         => opts[:instance_type], 
+                                        :username          => opts[:username],
+                                        :tags              => {:Name => args.first}
+                                        )
+      display server
+      eval(options[:post_script]) if options[:post_script]
+    end
+
+    def spots(args={})
+      con.spot_requests.table(_headers_for(:spot_requests))
+    end
 
     def connect(args={})
       if match = find_instances(args.first).select{|i| i.state == "running" }.first
@@ -80,7 +105,16 @@ module Ftl
         display "Typo alert! No server found!"
       end
     end
-    alias :c :connect
+    alias :x :connect
+    alias :ssh :connect
+
+    def start(args={})
+      display "Starting stopped instances is not implemented yet. Stay tuned true believers."
+    end
+
+    def stop(args={})
+      display "Stopping running instances is not implemented yet. Stay tuned true believers."
+    end
 
     def destroy(args={})
       if args.first.nil?
@@ -88,10 +122,16 @@ module Ftl
         return
       end
       display "Spinning down FTL..."
-      instance = find_instances(args.first)
-      instance.map(&:destroy)
+      instances = find_instances(args.first)
+      if instances
+        instances.map(&:destroy)
+        display "Terminated [bold]\[#{instances.map(&:id).join(', ')}\][/]"
+      else
+        display "No instances found"
+      end
     end
     alias :d        :destroy 
+    alias :delete   :destroy 
     alias :kill     :destroy 
     alias :down     :destroy 
     alias :shutdown :destroy 
@@ -110,6 +150,10 @@ module Ftl
     def image(args={})
       Formatador.display_table(con.images.find(:id => args.first))
     end
+
+    # TODO: Make images return only account's images by default
+    # def images(args={})
+    # end
 
     def headers(args={})
       display "Showing header options for #{args.first}"
@@ -170,6 +214,8 @@ module Ftl
       case object.to_sym
       when :snapshots
         [:id, :volume_id, :state, :volume_size, :description, :"tags.Name"]
+      when :spot_requests
+        [:id, :image_id, :availability_zone, :price, :flavor_id, :state, :request_type, :launched, :created_at]
       when :volumes
         [:server_id, :id, :size, :snapshot_id, :availability_zone, :state, :"tags.Name"]
       when nil
