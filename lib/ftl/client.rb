@@ -56,14 +56,16 @@ module Ftl
       display "Spinning up FTL..."
       opts = options
       opts = options[:templates][args.first.to_sym] if !options[:templates][args.first.to_sym].nil?
-      server = con.servers.create(:user_data         => opts[:user_data],
-                                  :key_name          => opts[:keypair], 
-                                  :groups            => opts[:groups], 
-                                  :image_id          => opts[:ami], 
-                                  :availability_zone => opts[:availability_zone], 
-                                  :flavor_id         => opts[:instance_type], 
-                                  :username          => opts[:username],
-                                  :tags              => opts[:tags].merge(:Name => args.first)
+      server = con.servers.create(:user_data          => opts[:user_data],
+                                  :key_name           => opts[:keypair], 
+                                  :groups             => opts[:groups], 
+                                  :image_id           => opts[:ami], 
+                                  :availability_zone  => opts[:availability_zone], 
+                                  :flavor_id          => opts[:instance_type], 
+                                  :username           => opts[:username],
+                                  :tags               => opts[:tags].merge(:Name => args.first),
+                                  :subnet_id          => opts[:subnet_id],
+                                  :private_ip_address => opts[:ip_private],
                                   )
       display server
       eval(options[:post_script]) if options[:post_script]
