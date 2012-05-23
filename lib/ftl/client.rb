@@ -46,15 +46,12 @@ module Ftl
       end
     end
 
-    def launch(args={})
-      if args.first.nil?
-        display "Please provide a short name for instance\n\t[bold]ftl[/] launch <name>"
-        return
-      end
+    def launch_instance(args)
       display "Spinning up FTL..."
-      opts = options
-      opts = options[:templates][args.first.to_sym] if !options[:templates][args.first.to_sym].nil?
+      # opts = options
+      opts = options.merge(options[:templates][args.first.to_sym]) if !options[:templates][args.first.to_sym].nil?
       server = con.servers.create(:user_data         => opts[:user_data],
+                                  :price             => opts[:price],
                                   :key_name          => opts[:keypair], 
                                   :groups            => opts[:groups], 
                                   :image_id          => opts[:ami], 
@@ -63,8 +60,20 @@ module Ftl
                                   :username          => opts[:username],
                                   :tags              => opts[:tags].merge(:Name => args.first)
                                   )
+
       display server
-      eval(options[:post_script]) if options[:post_script]
+      display "Executing :post_script..." if opts[:post_script]
+      eval(opts[:post_script]) if opts[:post_script]
+    end
+
+    def launch(args={})
+      if args.first.nil?
+        display "Please provide a short name for instance\n\t[bold]ftl[/] launch <name>"
+        return
+      end
+      display "Spinning up FTL..."
+      options.merge(options[:templates][args.first.to_sym]) if !options[:templates][args.first.to_sym].nil?
+      server = launch_instance(args)
     end
     alias :up     :launch
     alias :spinup :launch
@@ -81,19 +90,9 @@ module Ftl
         return
       end
       display "Spinning up FTL..."
-      opts = options
-      opts = options[:templates][args.first.to_sym] if !options[:templates][args.first.to_sym].nil?
-      server = con.spot_requests.create(:user_data         => opts[:user_data],
-                                        :price             => args[1],
-                                        :key_name          => opts[:keypair], 
-                                        :groups            => opts[:groups], 
-                                        :image_id          => opts[:ami], 
-                                        :availability_zone => opts[:availability_zone], 
-                                        :flavor_id         => opts[:instance_type], 
-                                        :username          => opts[:username],
-                                        :tags              => {:Name => args.first}
-                                        )
-      display server
+      options.merge(options[:templates][args.first.to_sym]) if !options[:templates][args.first.to_sym].nil?
+      options[:price] = args[1]
+      server = launch_instance(args)
     end
 
     def spots(args={})
@@ -261,7 +260,6 @@ module Ftl
     def method_missing(*args)
       begin
         method = args.first
-        # opts = args[1]
         if con.respond_to? method
           display con.send(method).table(_headers_for(method))
         else
