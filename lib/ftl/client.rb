@@ -37,9 +37,11 @@ module Ftl
 
     def initialize(args=nil, opts={})
       load_config(opts)
-      @con = Fog::Compute.new(:provider => 'AWS', :aws_secret_access_key => options['SECRET_ACCESS_KEY'], :aws_access_key_id => options['ACCESS_KEY_ID'])
       if args && args.length > 0
         arg = args.reverse.pop
+        if (arg != 'edit')
+          @con = Fog::Compute.new(:provider => 'AWS', :aws_secret_access_key => options['SECRET_ACCESS_KEY'], :aws_access_key_id => options['ACCESS_KEY_ID'])
+        end
         send(arg, args - [arg])
       else
         Ftl.help
@@ -48,17 +50,18 @@ module Ftl
 
     def launch_instance(args)
       display "Spinning up FTL..."
-      # opts = options
-      opts = options.merge(options[:templates][args.first.to_sym]) if !options[:templates][args.first.to_sym].nil?
-      server = con.servers.create(:user_data         => opts[:user_data],
-                                  :price             => opts[:price],
-                                  :key_name          => opts[:keypair], 
-                                  :groups            => opts[:groups], 
-                                  :image_id          => opts[:ami], 
-                                  :availability_zone => opts[:availability_zone], 
-                                  :flavor_id         => opts[:instance_type], 
-                                  :username          => opts[:username],
-                                  :tags              => opts[:tags].merge(:Name => args.first)
+      opts = options
+      opts = options[:templates][args.first.to_sym] if !options[:templates][args.first.to_sym].nil?
+      server = con.servers.create(:user_data          => opts[:user_data],
+                                  :key_name           => opts[:keypair], 
+                                  :groups             => opts[:groups], 
+                                  :image_id           => opts[:ami], 
+                                  :availability_zone  => opts[:availability_zone], 
+                                  :flavor_id          => opts[:instance_type], 
+                                  :username           => opts[:username],
+                                  :tags               => opts[:tags].merge(:Name => args.first),
+                                  :subnet_id          => opts[:subnet_id],
+                                  :private_ip_address => opts[:ip_private],
                                   )
 
       display server
@@ -114,7 +117,9 @@ module Ftl
 
     def connect(args={})
       if match = find_instances(args.first).select{|i| i.state == "running" }.first
-        exec("ssh #{options[:username]||'root'}@#{match[:dns_name]}")
+        opt_key = "-i #{options[:keys][match[:key_name]]}" unless (options[:keys].nil? || options[:keys][match[:key_name]].nil?)
+        hostname = match[:dns_name] || match[:public_ip_address] || match[:private_ip_address]
+        exec("ssh #{opt_key} #{options[:username]||'root'}@#{hostname}")
       else
         display "Typo alert! No server found!"
       end
