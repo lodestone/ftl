@@ -20,8 +20,8 @@ module Ftl
         ftl headers servers                # Show possible headers for servers
         ftl headers volumes                # Show possible headers for volumes
         ftl edit                           # Edit ftl.yml with your $EDITOR
-        ftl --config=~/ftl.yml servers     # Uses custom config file 
-        ftl --headers=id,tags.Name servers # Uses specified headers 
+        ftl --config=~/ftl.yml servers     # Uses custom config file
+        ftl --headers=id,tags.Name servers # Uses specified headers
         ftl --version                      # Show version number
     }
   end
@@ -53,11 +53,12 @@ module Ftl
       opts = options
       opts = options[:templates][args.first.to_sym] if !options[:templates][args.first.to_sym].nil?
       server = con.servers.create(:user_data          => opts[:user_data],
-                                  :key_name           => opts[:keypair], 
-                                  :groups             => opts[:groups], 
-                                  :image_id           => opts[:ami], 
-                                  :availability_zone  => opts[:availability_zone], 
-                                  :flavor_id          => opts[:instance_type], 
+                                  :key_name           => opts[:keypair],
+                                  :groups             => opts[:groups],
+                                  :security_group_ids => opts[:group_ids],
+                                  :image_id           => opts[:ami],
+                                  :availability_zone  => opts[:availability_zone],
+                                  :flavor_id          => opts[:instance_type],
                                   :username           => opts[:username],
                                   :tags               => opts[:tags].merge(:Name => args.first),
                                   :subnet_id          => opts[:subnet_id],
@@ -154,11 +155,11 @@ module Ftl
         display "No instances found"
       end
     end
-    alias :d        :destroy 
-    alias :delete   :destroy 
-    alias :kill     :destroy 
-    alias :down     :destroy 
-    alias :shutdown :destroy 
+    alias :d        :destroy
+    alias :delete   :destroy
+    alias :kill     :destroy
+    alias :down     :destroy
+    alias :shutdown :destroy
 
     def info(args={})
       display find_instance(args.first)
@@ -212,11 +213,11 @@ module Ftl
         default_config_dir  = '/.ftl/'
         default_config_home = "#{ENV['HOME']}#{default_config_dir}"
         default_config_file = "#{default_config_home}#{default_config_name}"
-        if Dir.exist?(default_config_home) # Directory exists 
+        if Dir.exist?(default_config_home) # Directory exists
           if !File.exist?(default_config_file) # File does not
             File.open(default_config_file, 'w') {|f| f << ftl_yml }
           end
-        else # Directory does not exist 
+        else # Directory does not exist
           Dir.mkdir(default_config_home)
           File.open(default_config_file, 'w') {|f| f << ftl_yml }
         end
@@ -270,7 +271,7 @@ module Ftl
         else
           Ftl.help
         end
-      rescue 
+      rescue
       end
     end
 
