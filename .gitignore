@@ -4,3 +4,5 @@ vendor/bundle
 results.html
 pkg
 html
+
+.rvmrc
