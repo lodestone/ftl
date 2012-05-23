@@ -1,7 +1,9 @@
-Release Version 0.2.2 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Release Version 0.2.3 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   
   * Add ftl status
   * find_instances returns exact match preferentially
+  * Update README with more examples and setup
+  * Adds :keys config parameter
 
 Release Version 0.2.2 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
