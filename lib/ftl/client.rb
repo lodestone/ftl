@@ -119,7 +119,9 @@ module Ftl
 
     def connect(args={})
       if match = find_instances(args.first).select{|i| i.state == "running" }.first
-        exec("ssh #{options[:username]||'root'}@#{match[:dns_name]}")
+        opt_key = "-i #{options[:keys][match[:key_name]]}" unless (options[:keys].nil? || options[:keys][match[:key_name]].nil?)
+        hostname = match[:dns_name] || match[:public_ip_address] || match[:private_ip_address]
+        exec("ssh #{opt_key} #{options[:username]||'root'}@#{hostname}")
       else
         display "Typo alert! No server found!"
       end
