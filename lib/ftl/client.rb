@@ -56,10 +56,6 @@ module Ftl
       if (opts[:groups].all? { | group | group.to_s =~ /^sg-[0-9a-f]{8}$/ })
         # all groups look like group IDs, so we're going to assume they are
         opts[:group_ids] = opts.delete :groups
-      else
-        # I don't know what happens if we pass both :groups and :security_group_ids,
-        # so let's not find out the hard way
-        opts.delete :group_ids
       end
 
       server = con.servers.create(:user_data          => opts[:user_data],
@@ -73,7 +69,7 @@ module Ftl
                                   :tags               => opts[:tags].merge(:Name => args.first),
                                   :subnet_id          => opts[:subnet_id],
                                   :private_ip_address => opts[:ip_private],
-                                  )
+                                 )
 
       display server
       display "Executing :post_script..." if opts[:post_script]
