@@ -52,6 +52,16 @@ module Ftl
       display "Spinning up FTL..."
       opts = options
       opts = options[:templates][args.first.to_sym] if !options[:templates][args.first.to_sym].nil?
+
+      if (opts[:groups].all? { | group | group.to_s =~ /^sg-[0-9a-f]{8}$/ })
+        # all groups look like group IDs, so we're going to assume they are
+        opts[:group_ids] = opts.delete :groups
+      else
+        # I don't know what happens if we pass both :groups and :security_group_ids,
+        # so let's not find out the hard way
+        opts.delete :group_ids
+      end
+
       server = con.servers.create(:user_data          => opts[:user_data],
                                   :key_name           => opts[:keypair],
                                   :groups             => opts[:groups],
