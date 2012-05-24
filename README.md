@@ -73,7 +73,7 @@ launching instances and connecting to them.
 
 * :ami -- the ID of the AMI to use
 * :availability_zone -- the availability zone into which the instance should be launched
-* :groups -- a list of names of security groups to assign to the instance
+* :groups -- a list of names and/or IDs of security groups to assign to the instance
 * :instance_type -- the name of the EC2 instance size (e.g. 'm1.small')
 * :ip_private -- the private IP address to assign to the instance (optional)
 * :ip_public -- the public IP address to assign to the instance (optional)
@@ -83,6 +83,10 @@ launching instances and connecting to them.
 * :tags -- a hash of tags to be set on the instance; 'Name' will be automatically set from the
            server name
 * :username -- the username to use when connecting to the instance
+
+#### A note on security groups
+
+Security groups defined in a virtual private cloud (VPC) can be specified only by ID.
 
 #### The :keys section
 
