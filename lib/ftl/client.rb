@@ -53,10 +53,8 @@ module Ftl
       opts = options
       opts = options[:templates][args.first.to_sym] if !options[:templates][args.first.to_sym].nil?
 
-      if (opts[:groups].all? { | group | group.to_s =~ /^sg-[0-9a-f]{8}$/ })
-        # all groups look like group IDs, so we're going to assume they are
-        opts[:group_ids] = opts.delete :groups
-      end
+      opts[:group_ids] = (opts[:group_ids] || []) + opts[:groups].select { | group | group.to_s =~ /^sg-[0-9a-f]{8}$/ }
+      opts[:groups] = opts[:groups].reject { | group | group.to_s =~ /^sg-[0-9a-f]{8}$/ }
 
       server = con.servers.create(:user_data          => opts[:user_data],
                                   :key_name           => opts[:keypair],
