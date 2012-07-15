@@ -1,7 +1,7 @@
 PATH
   remote: .
   specs:
-    ftl (0.2.3)
+    ftl (0.2.4)
       fog
       formatador (~> 0.2.2)
 
