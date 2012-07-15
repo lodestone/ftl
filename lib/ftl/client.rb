@@ -20,6 +20,8 @@ module Ftl
         ftl headers servers                # Show possible headers for servers
         ftl headers volumes                # Show possible headers for volumes
         ftl edit                           # Edit ftl.yml with your $EDITOR
+        ftl images                         # Show AMIs associated with your account
+        ftl <action> ninja                 # Execute the <action> (specified in ftl.yml) on the remote server instance
         ftl --config=~/ftl.yml servers     # Uses custom config file
         ftl --headers=id,tags.Name servers # Uses specified headers
         ftl --version                      # Show version number
@@ -32,6 +34,8 @@ module Ftl
 
   class Client
 
+    SINGLE_COMMANDS = %w{ edit sample }
+
     attr_reader :con
     attr_accessor :options
 
@@ -39,10 +43,14 @@ module Ftl
       load_config(opts)
       if args && args.length > 0
         arg = args.reverse.pop
-        if (arg != 'edit')
+        if (!SINGLE_COMMANDS.include?(arg))
           @con = Fog::Compute.new(:provider => 'AWS', :aws_secret_access_key => options['SECRET_ACCESS_KEY'], :aws_access_key_id => options['ACCESS_KEY_ID'])
         end
-        send(arg, args - [arg])
+        begin
+          send(arg, args - [arg])
+        rescue
+          Ftl.help
+        end
       else
         Ftl.help
       end
@@ -75,10 +83,7 @@ module Ftl
     end
 
     def launch(args={})
-      if args.first.nil?
-        display "Please provide a short name for instance\n\t[bold]ftl[/] launch <name>"
-        return
-      end
+      guard(args.first, "Please provide a short name for instance\n\t[bold]ftl[/] launch <name>")
       display "Spinning up FTL..."
       options.merge(options[:templates][args.first.to_sym]) if !options[:templates][args.first.to_sym].nil?
       server = launch_instance(args)
@@ -89,14 +94,8 @@ module Ftl
     alias :new    :launch
 
     def spot(args={})
-      if args.first.nil?
-        display "Please provide a short name for instance\n\t[bold]ftl[/] spot <name> <price>"
-        return
-      end
-      if args[1].nil?
-        display "Please provide a price for spot request\n\t[bold]ftl[/] spot <name> <price>"
-        return
-      end
+      guard(args.first, "Please provide a short name for instance\n\t[bold]ftl[/] spot <name> <price>")
+      guard(args[1], "Please provide a price for spot request\n\t[bold]ftl[/] spot <name> <price>")
       display "Spinning up FTL..."
       options.merge(options[:templates][args.first.to_sym]) if !options[:templates][args.first.to_sym].nil?
       options[:price] = args[1]
@@ -108,10 +107,7 @@ module Ftl
     end
 
     def cancel(args={})
-      if args.first.nil?
-        display "Please provide the id for the spot request to cancel."
-        return
-      end
+      guard(args.first, "Please provide the id for the spot request to cancel.") 
       spot = con.spot_requests.get(args.first)
       if spot && spot.destroy
         display "Canceled Spot Instance #{spot.id}."
@@ -133,6 +129,7 @@ module Ftl
     alias :ssh :connect
 
     def status(args={})
+      guard(args, :message => "Please provide the name/id of a server (ftl status <server>)")
       server = find_instance(args.first)
       display server
     end
@@ -180,9 +177,17 @@ module Ftl
       Formatador.display_table(con.images.find(:id => args.first))
     end
 
-    # TODO: Make images return only account's images by default
-    # def images(args={})
-    # end
+    # TODO: Make this better by including more details of block devices
+    def images(args={})
+      hashes = con.describe_images('Owner' => 'self').body['imagesSet'].collect do |hash|
+        h = {}
+        h[:image_id]  = hash['imageId']
+        h[:name]  = hash['name']
+        h[:rootDeviceType] = hash['rootDeviceType']
+        h
+      end 
+      puts Formatador.display_table(hashes)
+    end
 
     def headers(args={})
       display "Showing header options for #{args.first}"
@@ -198,12 +203,22 @@ module Ftl
       `$EDITOR ~/.ftl/ftl.yml`
     end
 
+    def sample(args={})
+      puts File.open(File.dirname(__FILE__) + "/../resources/ftl.yml").read
+    end
 
     ###########################################################################
     ## private                                                              ###
     ###########################################################################
     private
 
+    def guard(arg, options={:message => "Please refer to ftl help"})
+      if arg.nil?
+        display options[:message]
+        exit
+      end
+    end
+ 
     def ftl_yml
       File.open("lib/resources/ftl.yml").read
     end
@@ -244,7 +259,7 @@ module Ftl
 
     def _headers_for(object)
       return options[:headers].map(&:to_sym) if options[:headers]
-      case object.to_sym
+      case object
       when :snapshots
         [:id, :volume_id, :state, :volume_size, :description, :"tags.Name"]
       when :spot_requests
@@ -267,14 +282,19 @@ module Ftl
       Formatador.display_line(msg)
     end
 
+    def eval_action(script, args)
+      # TODO Complete the script to handle multiple servers, like:
+      # ftl bundle server1 server2 server3
+      server = find_instance(args[1].first)
+      eval(script, binding)
+    end
+
     def method_missing(*args)
       begin
-        method = args.first
-        if con.respond_to? method
-          display con.send(method).table(_headers_for(method))
-        else
-          Ftl.help
-        end
+        method = args.first.to_sym
+        display con.send(method).table(_headers_for(method)) if con.respond_to? method
+        eval_action(@options[:actions][method], args) if @options[:actions][method]
+        Ftl.help
       rescue
       end
     end

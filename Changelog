@@ -1,20 +1,26 @@
-Release Version 0.2.3 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+# Release Version 0.2.4 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+* Add ftl <action> <server> to execute arbitrary commands on running instances
+* Add ftl sample_config to see the latest sample ftl.yml
+* Add ftl images # Shows AMIs associated with your account
+
+# Release Version 0.2.3 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   
-  * Add ftl status
-  * find_instances returns exact match preferentially
-  * Update README with more examples and setup
-  * Adds :keys config parameter
+* Add ftl status
+* find_instances returns exact match preferentially
+* Update README with more examples and setup
+* Adds :keys config parameter
 
-Release Version 0.2.2 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+# Release Version 0.2.2 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-  * Adds templates feature to config file
-  * Start and cancel spot requests
-  * Execution without parameters shows help screen
-  * Fixes various bugs
+* Adds templates feature to config file
+* Start and cancel spot requests
+* Execution without parameters shows help screen
+* Fixes various bugs
 
-Release Version 0.2.0 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+# Release Version 0.2.0 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
- * First revamped release handling AWS in a more generic way
+* First revamped release handling AWS in a more generic way
 
 Previous releases were focused on starting up Pair Programming servers. 
 The latest releases can also be used for this but are more useful in a generic 

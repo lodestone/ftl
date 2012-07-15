@@ -1,20 +1,33 @@
+# Sample ftl.yml. Your ftl.yml should be located in ~/.ftl/ftl.yml and should
+#  look similar to this file
+# 
+# FILL IN THESE TWO VALUES
 ACCESS_KEY_ID: 
 SECRET_ACCESS_KEY: 
+
 :ami: ami-a29943cb # Ubuntu 12.04 LTS Precise Pangolin
 :username: ubuntu
-:instance_type: m1.small
-:instance_script: |
+:instance_type: t1.micro # m1.small 
+:user_data: |
   #!/bin/sh
   touch /root/file.touched
-:spinup_script: | 
+:post_script: | 
 :tags: {}
+:actions:
+  :uptime: puts server.ssh('uptime').first.stdout
+  :mount: puts server.ssh('mount').first.stdout
+  :df: puts server.ssh('df -h').first.stdout
+  :w: puts server.ssh('w').first.stdout
+
 
 :templates:
   :default:
     :ami: ami-a29943cb # Ubuntu 12.04 LTS Precise Pangolin
     :username: ubuntu
     :instance_type: m1.small
-    :instance_script: |
+    :user_data: |
       #!/bin/sh
       touch /root/file.touched
-    :spinup_script: | 
+    :post_script: | 
+
+
