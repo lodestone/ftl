@@ -22,6 +22,7 @@ module Ftl
         ftl edit                           # Edit ftl.yml with your $EDITOR
         ftl images                         # Show AMIs associated with your account
         ftl <action> ninja                 # Execute the <action> (specified in ftl.yml) on the remote server instance
+        ftl <script> ninja                 # Execute the <script> (specified in ftl.yml) on your local machine
         ftl --config=~/ftl.yml servers     # Uses custom config file
         ftl --headers=id,tags.Name servers # Uses specified headers
         ftl --version                      # Show version number
@@ -40,17 +41,14 @@ module Ftl
     attr_accessor :options
 
     def initialize(args=nil, opts={})
-      load_config(opts)
       if args && args.length > 0
         arg = args.reverse.pop
+        @args = [arg, args - [arg]]
+        load_config(opts)
         if (!SINGLE_COMMANDS.include?(arg))
           @con = Fog::Compute.new(:provider => 'AWS', :aws_secret_access_key => options['SECRET_ACCESS_KEY'], :aws_access_key_id => options['ACCESS_KEY_ID'])
         end
-        begin
-          send(arg, args - [arg])
-        rescue
-          Ftl.help
-        end
+        send(*@args)
       else
         Ftl.help
       end
@@ -75,6 +73,7 @@ module Ftl
                                   :tags               => opts[:tags].merge(:Name => args.first),
                                   :subnet_id          => opts[:subnet_id],
                                   :private_ip_address => opts[:ip_private],
+                                  :ip_address         => opts[:ip_address]
                                  )
 
       display server
@@ -84,7 +83,6 @@ module Ftl
 
     def launch(args={})
       guard(args.first, "Please provide a short name for instance\n\t[bold]ftl[/] launch <name>")
-      display "Spinning up FTL..."
       options.merge(options[:templates][args.first.to_sym]) if !options[:templates][args.first.to_sym].nil?
       server = launch_instance(args)
     end
@@ -94,7 +92,7 @@ module Ftl
     alias :new    :launch
 
     def spot(args={})
-      guard(args.first, "Please provide a short name for instance\n\t[bold]ftl[/] spot <name> <price>")
+      guard(args[0], "Please provide a short name for instance\n\t[bold]ftl[/] spot <name> <price>")
       guard(args[1], "Please provide a price for spot request\n\t[bold]ftl[/] spot <name> <price>")
       display "Spinning up FTL..."
       options.merge(options[:templates][args.first.to_sym]) if !options[:templates][args.first.to_sym].nil?
@@ -105,6 +103,7 @@ module Ftl
     def spots(args={})
       con.spot_requests.table(_headers_for(:spot_requests))
     end
+    alias :spot_requests :spots
 
     def cancel(args={})
       guard(args.first, "Please provide the id for the spot request to cancel.") 
@@ -116,11 +115,28 @@ module Ftl
       end
     end
 
+    def running_instances(name)
+      find_instances(name).select{|i| i.state == "running" }
+    end
+
+    def running_instance(name)
+      instances = running_instances(name)
+      instances.first if instances
+    end
+ 
+    def ssh_command(server)
+      opt_key = " -i #{options[:keys][server[:key_name]]}" unless (options[:keys].nil? || options[:keys][server[:key_name]].nil?)
+      hostname = server[:public_ip_address] || server[:dns_name] || server[:private_ip_address]
+      server_name =  server.tags['Name'].to_sym
+      user_name = options[:templates][server_name][:username] 
+      user_name = 'root' if user_name.nil? || user_name.length == 0
+      "ssh#{opt_key} #{user_name}@#{hostname}"
+    end
+
     def connect(args={})
-      if match = find_instances(args.first).select{|i| i.state == "running" }.first
-        opt_key = "-i #{options[:keys][match[:key_name]]}" unless (options[:keys].nil? || options[:keys][match[:key_name]].nil?)
-        hostname = match[:dns_name] || match[:public_ip_address] || match[:private_ip_address]
-        exec("ssh #{opt_key} #{options[:username]||'root'}@#{hostname}")
+      if server = running_instance(args.first)
+        # puts(ssh_command(server))
+        exec(ssh_command(server))
       else
         display "Typo alert! No server found!"
       end
@@ -133,34 +149,40 @@ module Ftl
       server = find_instance(args.first)
       display server
     end
+    alias :st :status
 
     def start(args={})
-      display "Starting stopped instances is not implemented yet. Stay tuned true believers."
+      display "Bringing \"#{args.first}\" server back to life."
+      find_instance(args.first).start
     end
+    alias :run :start
 
     def stop(args={})
-      display "Stopping running instances is not implemented yet. Stay tuned true believers."
+      display "Stopping \"#{args.first}\" server."
+      find_instance(args.first).stop
     end
+    alias :pause :stop
 
     def destroy(args={})
-      if args.first.nil?
+      if on_what.nil?
         display "Please provide the name (or partial name for the instance(s) you want to delete. For instance, like: ftl destroy ninja"
         return
       end
       display "Spinning down FTL..."
-      instances = find_instances(args.first)
-      if instances
+      instances = find_instances(on_what).select{|i| i.state == 'running' }
+      if !instances.empty?
         instances.map(&:destroy)
         display "Terminated [bold]\[#{instances.map(&:id).join(', ')}\][/]"
       else
         display "No instances found"
       end
     end
-    alias :d        :destroy
-    alias :delete   :destroy
-    alias :kill     :destroy
-    alias :down     :destroy
-    alias :shutdown :destroy
+    alias :d         :destroy
+    alias :delete    :destroy
+    alias :kill      :destroy
+    alias :down      :destroy
+    alias :shutdown  :destroy
+    alias :terminate :destroy
 
     def info(args={})
       display find_instance(args.first)
@@ -171,11 +193,13 @@ module Ftl
       opts = [:servers] if opts.empty?
       con.send(opts.first).table(_headers_for(opts.first))
     end
-    alias :l :list
+    alias :l  :list
+    alias :ls :list
 
     def image(args={})
       Formatador.display_table(con.images.find(:id => args.first))
     end
+    alias :img :image
 
     # TODO: Make this better by including more details of block devices
     def images(args={})
@@ -188,6 +212,20 @@ module Ftl
       end 
       puts Formatador.display_table(hashes)
     end
+    alias :describe_images :images
+
+    def ip_addresses
+      con.addresses
+    end
+
+    def ips(args={})
+      # TODO add server "name"
+      addrs = con.describe_addresses.body['addressesSet'] #.collect do |addr|
+        # addr
+      # end 
+      Formatador.display_table addrs
+    end
+    alias :addresses :ips
 
     def headers(args={})
       display "Showing header options for #{args.first}"
@@ -195,7 +233,7 @@ module Ftl
     end
 
     def server_instances(args={})
-      @servers ||= @con.servers.all
+      @servers ||= (con.servers.all||[])
     end
 
     def edit(args={})
@@ -206,6 +244,32 @@ module Ftl
     def sample(args={})
       puts File.open(File.dirname(__FILE__) + "/../resources/ftl.yml").read
     end
+
+    def command
+      @args[0]
+    end
+
+    def secondary_arguments
+      @args[1] 
+    end
+
+    def on_what 
+      secondary_arguments.first
+    end
+
+    def volume(args={})
+      arg = args.is_a?(String) ? args : on_what
+      display vol = con.volumes.select{|v| v.tags['Name'] == arg || v.id == arg }.first
+      vol
+    end
+
+    def execute(args={})
+      arg = args.is_a?(String) ? args : args[1]
+      server = find_instances(on_what).select{|i| i.state == 'running' }.first
+      puts %|#{ssh_command(server)} #{arg}|
+      system(%|#{ssh_command(server)} #{arg}|)
+    end
+    alias :ex :execute
 
     ###########################################################################
     ## private                                                              ###
@@ -224,7 +288,7 @@ module Ftl
     end
 
     def load_config(opts={})
-      # TODO Make this less shitty. Such a common pattern.
+      # TODO So ugly, make this less shitty. Such a common pattern.
       if opts[:config]
         default_config_file = opts[:config]
       else
@@ -267,9 +331,9 @@ module Ftl
       when :volumes
         [:server_id, :id, :size, :snapshot_id, :availability_zone, :state, :"tags.Name"]
       when nil
-        [:id, :image_id, :flavor_id, :availability_zone, :state, :"tags.Name"]
+        [:id, :image_id, :flavor_id, :availability_zone, :state, :created_at, :"tags.Name"]
       else
-        [:id, :image_id, :flavor_id, :availability_zone, :state, :"tags.Name"]
+        [:id, :image_id, :flavor_id, :availability_zone, :state, :created_at, :"tags.Name"]
       end
     end
 
@@ -285,17 +349,35 @@ module Ftl
     def eval_action(script, args)
       # TODO Complete the script to handle multiple servers, like:
       # ftl bundle server1 server2 server3
-      server = find_instance(args[1].first)
+      # server = find_instance(on_what)
+      server = find_instances(on_what).select{|i| i.state == 'running' }.first
       eval(script, binding)
     end
 
+    def eval_script(script, args)
+      eval(script, binding)
+    end
+
+    def local(cmd)
+      puts output = %x|#{cmd}|
+      output
+    end
+
+    # def remote(cmd)
+    #   %x|#{ssh_command(server)} #{cmd}|
+    # end
+
     def method_missing(*args)
-      begin
-        method = args.first.to_sym
-        display con.send(method).table(_headers_for(method)) if con.respond_to? method
-        eval_action(@options[:actions][method], args) if @options[:actions][method]
+      method = args.first.to_sym
+      if con.respond_to? method
+        results = con.send(method)
+        display results.table(_headers_for(method))
+      elsif options[:actions][method]
+        eval_action(options[:actions][method], args)
+      elsif options[:scripts][method]
+        eval_script(options[:scripts][method], args)
+      else
         Ftl.help
-      rescue
       end
     end
 

@@ -5,23 +5,20 @@
 ACCESS_KEY_ID: 
 SECRET_ACCESS_KEY: 
 
-:ami: ami-a29943cb # Ubuntu 12.04 LTS Precise Pangolin
-:username: ubuntu
-:instance_type: t1.micro # m1.small 
-:user_data: |
-  #!/bin/sh
-  touch /root/file.touched
-:post_script: | 
-:tags: {}
+:scripts:
+  :ls: |
+    local("ls -alh")
+    local("echo '-----------'")
+
 :actions:
   :uptime: puts server.ssh('uptime').first.stdout
   :mount: puts server.ssh('mount').first.stdout
   :df: puts server.ssh('df -h').first.stdout
   :w: puts server.ssh('w').first.stdout
 
-
 :templates:
-  :default:
+
+  :defaults: &defaults
     :ami: ami-a29943cb # Ubuntu 12.04 LTS Precise Pangolin
     :username: ubuntu
     :instance_type: m1.small
@@ -30,4 +27,9 @@ SECRET_ACCESS_KEY:
       touch /root/file.touched
     :post_script: | 
 
+  :ninja_server:
+    <<: *defaults
+    :user_data: |
+      #!/bin/sh
+      uptime > /root/uptime.txt
 

@@ -1,3 +1,11 @@
+# Release Version 0.3.0 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+* Add ftl <script> to execute arbitrary ruby locally within ftl environment
+* Add ftl ips to show Elastic IP addresses
+* Add ftl stop to stop running instances
+* Add ftl start to start running instances
+* Bug fixes
+
 # Release Version 0.2.4 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 * Add ftl <action> <server> to execute arbitrary commands on running instances

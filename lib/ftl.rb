@@ -7,6 +7,7 @@ require 'formatador'
 require 'ftl/fog_lights'
 require 'ftl/formatador_table'
 
+
 module Ftl
-  # I'm a module!
+  # Look at me, I'm a module!
 end

@@ -19,4 +19,5 @@ Gem::Specification.new do |gem|
   gem.add_development_dependency('rake','~> 0.9.2')
   gem.add_dependency('fog')
   gem.add_dependency('formatador', '~> 0.2.2')
+  gem.add_dependency('tilt')
 end
