@@ -57,12 +57,14 @@ module Ftl
     def launch_instance(args)
       display "Spinning up FTL..."
       opts = options
-      opts = options[:templates][args.first.to_sym] if !options[:templates][args.first.to_sym].nil?
+      opts = options.merge(options[:templates][args.first.to_sym]) if !options[:templates][args.first.to_sym].nil?
 
       opts[:group_ids] = (opts[:group_ids] || []) + opts[:groups].select { | group | group.to_s =~ /^sg-[0-9a-f]{8}$/ }
       opts[:groups] = opts[:groups].reject { | group | group.to_s =~ /^sg-[0-9a-f]{8}$/ }
 
-      server = con.servers.create(:user_data          => opts[:user_data],
+      launcher = options.delete(:launcher) || :servers
+      server = con.send(launcher).create(
+                                  :user_data          => opts[:user_data],
                                   :key_name           => opts[:keypair],
                                   :groups             => opts[:groups],
                                   :security_group_ids => opts[:group_ids],
@@ -73,7 +75,8 @@ module Ftl
                                   :tags               => opts[:tags].merge(:Name => args.first),
                                   :subnet_id          => opts[:subnet_id],
                                   :private_ip_address => opts[:ip_private],
-                                  :ip_address         => opts[:ip_address]
+                                  :ip_address         => opts[:ip_address],
+                                  :price              => opts[:price]
                                  )
 
       display server
@@ -96,9 +99,11 @@ module Ftl
       guard(args[1], "Please provide a price for spot request\n\t[bold]ftl[/] spot <name> <price>")
       display "Spinning up FTL..."
       options.merge(options[:templates][args.first.to_sym]) if !options[:templates][args.first.to_sym].nil?
-      options[:price] = args[1]
+      options[:price] = args[1] || options[:templates][args.first.to_sym][:price] || options[:price]
+      options.merge!(:launcher => :spot_requests)
       server = launch_instance(args)
     end
+    alias :request :spot
 
     def spots(args={})
       con.spot_requests.table(_headers_for(:spot_requests))
@@ -164,15 +169,12 @@ module Ftl
     alias :pause :stop
 
     def destroy(args={})
-      if on_what.nil?
-        display "Please provide the name (or partial name for the instance(s) you want to delete. For instance, like: ftl destroy ninja"
-        return
-      end
+      guard(on_what, "Please provide the name (or partial name for the instance(s) you want to delete. For instance, like: ftl destroy ninja")
       display "Spinning down FTL..."
       instances = find_instances(on_what).select{|i| i.state == 'running' }
       if !instances.empty?
         instances.map(&:destroy)
-        display "Terminated [bold]\[#{instances.map(&:id).join(', ')}\][/]"
+        display "Destroyed [bold]\[#{instances.map(&:id).join(', ')}\][/]"
       else
         display "No instances found"
       end
@@ -182,7 +184,19 @@ module Ftl
     alias :kill      :destroy
     alias :down      :destroy
     alias :shutdown  :destroy
-    alias :terminate :destroy
+
+    def terminate(args={})
+      guard(on_what, "Please provide the name (or partial name for the instance(s) you want to terminate. For instance, like: ftl destroy ninja")
+      display "Spinning down FTL..."
+      instances = find_instances(on_what)
+      if !instances.empty?
+        instances.map(&:destroy)
+        display "Destroyed [bold]\[#{instances.map(&:id).join(', ')}\][/]"
+      else
+        display "No instances found"
+      end
+    end
+    alias :t :terminate
 
     def info(args={})
       display find_instance(args.first)

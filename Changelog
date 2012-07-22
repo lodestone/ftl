@@ -1,10 +1,14 @@
 # Release Version 0.3.0 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-* Add ftl <script> to execute arbitrary ruby locally within ftl environment
-* Add ftl ips to show Elastic IP addresses
-* Add ftl stop to stop running instances
-* Add ftl start to start running instances
+* Feature: Add ftl <script> to execute arbitrary ruby locally within ftl environment
+* Feature: Add ftl ips to show Elastic IP addresses
+* Feature: Add ftl stop to stop running instances
+* Feature: Add ftl start to start running instances
+* Feature: Add option to pass in spot request instance count
+* Feature: Add ftl terminate to specifically terminate any instance vs only running ones
+* Bug fix: Spot requests were launching as regular instances 
 * Bug fixes
+
 
 # Release Version 0.2.4 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
