@@ -233,8 +233,9 @@ module Ftl
     alias :addresses :ips
 
     def headers(args={})
-      display "Showing header options for #{args.first}"
-      display con.send(args.first).first.attributes.keys
+      what = args.first || :servers
+      display "Showing header options for #{what}"
+      display con.send(what).first.attributes.keys
     end
 
     def server_instances(args={})
