@@ -7,7 +7,7 @@
 * Feature: Add option to pass in spot request instance count
 * Feature: Add ftl terminate to specifically terminate any instance vs only running ones
 * Bug fix: Spot requests were launching as regular instances 
-* Bug fixes
+* Bug fix: Other minor bug fixes and cleanups
 
 
 # Release Version 0.2.4 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

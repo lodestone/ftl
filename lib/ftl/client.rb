@@ -128,15 +128,6 @@ module Ftl
       instances = running_instances(name)
       instances.first if instances
     end
- 
-    def ssh_command(server)
-      opt_key = " -i #{options[:keys][server[:key_name]]}" unless (options[:keys].nil? || options[:keys][server[:key_name]].nil?)
-      hostname = server[:public_ip_address] || server[:dns_name] || server[:private_ip_address]
-      server_name =  server.tags['Name'].to_sym
-      user_name = options[:templates][server_name][:username] 
-      user_name = 'root' if user_name.nil? || user_name.length == 0
-      "ssh#{opt_key} #{user_name}@#{hostname}"
-    end
 
     def connect(args={})
       if server = running_instance(args.first)
@@ -289,6 +280,15 @@ module Ftl
     ## private                                                              ###
     ###########################################################################
     private
+ 
+    def ssh_command(server)
+      opt_key = " -i #{options[:keys][server[:key_name]]}" unless (options[:keys].nil? || options[:keys][server[:key_name]].nil?)
+      hostname = server[:public_ip_address] || server[:dns_name] || server[:private_ip_address]
+      server_name =  server.tags['Name'].to_sym
+      user_name = options[:templates][server_name][:username] 
+      user_name = 'root' if user_name.nil? || user_name.length == 0
+      "ssh#{opt_key} #{user_name}@#{hostname}"
+    end
 
     def guard(arg, options={:message => "Please refer to ftl help"})
       if arg.nil?
