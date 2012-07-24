@@ -1,3 +1,7 @@
+# Release Version 0.3.1 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+* Allow spot requests to accept --count parameter
+
 # Release Version 0.3.0 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 * Feature: Add ftl <script> to execute arbitrary ruby locally within ftl environment

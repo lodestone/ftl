@@ -76,7 +76,8 @@ module Ftl
                                   :subnet_id          => opts[:subnet_id],
                                   :private_ip_address => opts[:ip_private],
                                   :ip_address         => opts[:ip_address],
-                                  :price              => opts[:price]
+                                  :price              => opts[:price],
+                                  :instance_count     => opts[:count]
                                  )
 
       display server

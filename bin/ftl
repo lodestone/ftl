@@ -14,6 +14,10 @@ optparse = OptionParser.new do |opts|
   # opts.on('-s', '--sample-config', "Displays sample ftl.yml config file") do |opts|
   #   Ftl.sample_config
   # end
+  opts.on('-n', '--count COUNT', "Set count for spot requests") do |count|
+    p count
+    options[:count] = count
+  end
 
   opts.on('-d', '--headers FILE', Array, "provide custom headers") do |headers|
     options[:headers] = headers
