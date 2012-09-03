@@ -112,6 +112,6 @@ To connect to it, run `ftl connect ninja`.
 
 © 2012 Matthew Petty 
 
-* Twitter: [@mattpetty](http://twitter.com/mattpetty) 
+* Twitter: [@lodestone](http://twitter.com/lodestone) 
 * Github: [@lodestone](http://github.com/lodestone) 
 * Email: [lodestone@gmail.com](mailto:lodestone@gmail.com)
