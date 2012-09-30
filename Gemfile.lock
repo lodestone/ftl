@@ -1,7 +1,7 @@
 PATH
   remote: .
   specs:
-    ftl (0.3.2)
+    ftl (0.3.3)
       fog
       formatador (~> 0.2.2)
       tilt
