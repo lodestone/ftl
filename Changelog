@@ -1,7 +1,8 @@
 # Release Version 0.3.2 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-* Feature: Add ftl templates
-* Feature: Load yml files from templates subdirectory if available
+* Feature: Add ftl templates (BETA)
+* Feature: Load yml files from templates subdirectory if available (BETA)
+* Bug Fix: ssh command usernames
 
 # Release Version 0.3.1 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
