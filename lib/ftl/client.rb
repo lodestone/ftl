@@ -132,7 +132,7 @@ module Ftl
 
     def connect(args={})
       if server = running_instance(args.first)
-        # puts(ssh_command(server))
+        puts(ssh_command(server))
         exec(ssh_command(server))
       else
         display "Typo alert! No server found!"
@@ -286,8 +286,10 @@ module Ftl
     def ssh_command(server)
       opt_key = " -i #{options[:keys][server[:key_name]]}" unless (options[:keys].nil? || options[:keys][server[:key_name]].nil?)
       hostname = server[:public_ip_address] || server[:dns_name] || server[:private_ip_address]
-      server_name =  server.tags['Name'].to_sym
-      user_name = options[:templates][server_name][:username] 
+      if server.tags['Name']
+        server_name =  server.tags['Name'].to_sym
+        user_name = options[:templates][server_name][:username] 
+      end
       user_name = 'root' if user_name.nil? || user_name.length == 0
       "ssh#{opt_key} #{user_name}@#{hostname}"
     end
@@ -323,7 +325,32 @@ module Ftl
       end
       @options = YAML.load_file(default_config_file)
       @options = @options.merge(opts)
+      load_extended_config_yaml
       puts "======Please open #{default_config_file} and set ACCESS_KEY_ID and SECRET_ACCESS_KEY====\n\n" if aws_credentials_absent?
+    end
+
+    def yaml_config(*args)
+      puts @options
+    end
+
+    def templates(args)
+      if args.first
+        p @options[:templates][args.first.to_sym]
+      else
+        @options[:templates].each do |template|
+          puts template.first
+        end
+      end
+    end
+
+    # TODO Make :scripts and :actions the same way
+    def load_extended_config_yaml
+      Dir.glob("#{ENV['HOME']}/.ftl/templates/*.yml").each do |file|
+        yaml = YAML.load_file(file)
+        name = File.basename(file).gsub(".yml", '')
+        @options[:templates][name.to_sym]=@options[:templates][:defaults]
+        @options[:templates][name.to_sym].merge!(yaml)
+      end
     end
 
     def find_instance(name)
