@@ -278,14 +278,27 @@ module Ftl
     end
     alias :ex :execute
 
+    def address(args={})
+      if server = running_instance(args.first)
+        puts server_address(server)
+      else
+        display "Typo alert! No server found!"
+      end
+    end
+    alias :a :address
+
     ###########################################################################
     ## private                                                              ###
     ###########################################################################
     private
  
+    def server_address(server)
+      server[:public_ip_address] || server[:dns_name] || server[:private_ip_address]
+    end
+
     def ssh_command(server)
       opt_key = " -i #{options[:keys][server[:key_name]]}" unless (options[:keys].nil? || options[:keys][server[:key_name]].nil?)
-      hostname = server[:public_ip_address] || server[:dns_name] || server[:private_ip_address]
+      hostname = server_address(server)
       if server.tags['Name']
         server_name =  server.tags['Name'].to_sym
         user_name = options[:templates][server_name][:username] 

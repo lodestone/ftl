@@ -1,3 +1,7 @@
+# Release Version 0.3.3 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+# Feature: Add ftl address - returns a publicly accessible ip or hostname for a named instance.
+
 # Release Version 0.3.2 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 * Feature: Add ftl templates (BETA)
